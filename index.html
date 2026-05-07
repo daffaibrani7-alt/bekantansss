@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split Bill - Rupiah Animation</title>
+    <meta name="description" content="Calculate and split your bills easily with beautiful Rupiah coin animations.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <nav class="navbar floating-nav glass-card">
+        <div class="logo" id="nav-logo" style="cursor: pointer;">Bekantans</div>
+        <div class="nav-links">
+            <a href="#" class="active" id="nav-split">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                Split Bill
+            </a>
+            <a href="#" id="nav-cash">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><rect x="14" y="11" width="8" height="4" rx="1"/></svg>
+                Cash Fund
+            </a>
+            <a href="#" id="nav-travel">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Travel Journal
+            </a>
+        </div>
+    </nav>
+
+    <div id="coin-container"></div>
+    
+    <main class="container">
+        <!-- LANDING VIEW -->
+        <section id="landing-view" class="landing-view">
+            <div class="hero">
+                <div id="hero-main-content">
+                    <p class="powered-by">Powered by Bekantans</p>
+                    <div class="title-container">
+                        <span class="rp-circle left">Rp</span>
+                        <h1>SPLIT BILL</h1>
+                        <span class="rp-circle right">Rp</span>
+                    </div>
+                    <h2>The easiest way to split your shopping totals</h2>
+                    <p class="hero-desc">Take a photo or upload a receipt to split the bill and determine the amount to be paid with your friends.</p>
+                    
+                    <div class="hero-actions">
+                        <button class="hero-btn" onclick="document.getElementById('bill-image').click()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Upload Receipt
+                        </button>
+                        <button class="hero-btn" onclick="window.startManual()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Input Manual
+                        </button>
+                        <input type="file" id="bill-image" accept="image/*" hidden>
+                    </div>
+                </div>
+
+                <div id="ocr-status" class="status-msg hidden">
+                    <div class="coin-loader">
+                        <div class="loader-coin">Rp</div>
+                        <div class="loader-coin">Rp</div>
+                        <div class="loader-coin">Rp</div>
+                    </div>
+                    <span id="status-text">Scanning receipt...</span>
+                    <p class="loader-sub">Please wait a moment!</p>
+                </div>
+
+                <div id="ocr-error" class="status-msg hidden">
+                    <div class="error-icon-wrapper">
+                        <div class="error-circle">✕</div>
+                    </div>
+                    <span id="error-text">Failed to Read Receipt</span>
+                    <p class="loader-sub">Make sure the photo is clear and bright!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN APP VIEW (Initially Hidden) -->
+        <section id="main-view" class="main-view hidden">
+            <header class="view-header">
+                <button class="back-btn" onclick="window.location.reload()">← Split Bills</button>
+            </header>
+
+            <section class="participants-section glass-card">
+                <div class="section-header">
+                    <h2 id="participant-header">Participant</h2>
+                </div>
+                <div id="people-avatars" class="people-avatars">
+                    <!-- Avatars will be injected here -->
+                    <button class="add-avatar-btn" onclick="window.addPerson()">+</button>
+                </div>
+            </section>
+
+            <section class="itemized-section glass-card">
+                <div class="section-header">
+                    <h2>Items List</h2>
+                </div>
+                <div class="add-item-direct">
+                    <input type="text" id="direct-item-name" placeholder="Item name...">
+                    <input type="number" id="direct-item-price" placeholder="Price (Rp)...">
+                    <button id="direct-add-item" class="primary-btn small-btn">Add</button>
+                </div>
+                <div id="items-list" class="items-list mt-1">
+                    <!-- Items will be injected here -->
+                </div>
+            </section>
+
+
+
+            <div id="individual-results" class="results-grid mt-4"></div>
+
+            <div class="sticky-summary">
+                <div class="summary-top">
+                    <span class="total-label">TOTAL</span>
+                    <span id="sticky-total" class="total-amount">Rp 0</span>
+                </div>
+                <div class="summary-bottom">
+                    <button id="calculate-btn" class="primary-btn full-btn">Generate Split</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CASH FUND VIEW -->
+        <section id="cash-fund-view" class="cash-fund-view hidden">
+            <div class="view-header-row">
+                <h1 class="view-title">Monthly Cash Fund</h1>
+                <div class="month-selector glass-card">
+                    <button class="month-nav" id="prev-month">←</button>
+                    <span id="current-month-display">May 2024</span>
+                    <button class="month-nav" id="next-month">→</button>
+                </div>
+            </div>
+
+            <div class="cash-stats">
+                <div class="stat-card glass-card">
+                    <span class="label">Total Collected</span>
+                    <span id="total-cash-collected" class="amount">Rp 0</span>
+                </div>
+                <div class="stat-card glass-card">
+                    <span class="label">Target per Person</span>
+                    <span id="cash-target-info" class="amount">Rp 100.000</span>
+                </div>
+            </div>
+
+            <div id="cash-people-list" class="cash-people-list">
+                <!-- Cash cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- TRAVEL JOURNAL VIEW -->
+        <section id="travel-view" class="travel-view hidden">
+            <div class="view-header-row">
+                <h1 class="view-title">Travel Journal</h1>
+                <div class="travel-actions">
+                    <button class="primary-btn" onclick="window.addDestination()">+ Add Destination</button>
+                </div>
+            </div>
+
+            <div class="travel-stats">
+                <div class="stat-card glass-card highlight-card">
+                    <span class="label">Total Trip Expense</span>
+                    <span id="total-travel-cost" class="amount">Rp 0</span>
+                </div>
+            </div>
+
+            <div id="destination-grid" class="destination-grid">
+                <!-- Destination cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <div class="modal glass-card">
+                <div class="modal-header">
+                    <h2 id="modal-title">Add Item</h2>
+                </div>
+                <div id="modal-content" class="modal-content">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-actions">
+                    <button id="modal-cancel" class="btn-secondary">Cancel</button>
+                    <button id="modal-save" class="btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

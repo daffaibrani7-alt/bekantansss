@@ -1295,10 +1295,16 @@ body.cash-fund-active #coin-container {
 
 /* --- TRAVEL JOURNAL PREMIUM UI --- */
 .travel-view {
-    width: 92%;
-    max-width: 1100px;
+    width: 96%;
+    max-width: 1400px;
     margin: 120px auto 160px;
     animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.travel-journal-active #coin-container {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
 }
 
 .travel-stats {
@@ -1313,8 +1319,8 @@ body.cash-fund-active #coin-container {
 
 .destination-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 2.5rem;
     margin-bottom: 8rem;
 }
 
@@ -1324,19 +1330,45 @@ body.cash-fund-active #coin-container {
     transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     flex-direction: column;
+    min-height: 480px;
 }
 
 .destination-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
     border-color: rgba(255, 255, 255, 0.15);
 }
 
 .dest-image {
-    height: 220px;
+    height: 260px;
     background-size: cover;
     background-position: center;
     position: relative;
+}
+
+.dest-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.dest-location, .dest-duration {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dest-location {
+    color: var(--accent-primary);
+}
+
+.dest-duration {
+    color: #10b981;
 }
 
 .dest-date {

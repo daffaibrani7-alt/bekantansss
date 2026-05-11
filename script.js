@@ -16,21 +16,37 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
     ];
     
-    // Load from localStorage or use defaults
-    const savedPeople = localStorage.getItem('bekantans_people');
-    window.people = savedPeople ? JSON.parse(savedPeople) : [...DEFAULT_PEOPLE];
+    // --- Firebase Initialization ---
+    // PASTE YOUR FIREBASE CONFIG HERE
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        databaseURL: "YOUR_DATABASE_URL",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-    const savedCashData = localStorage.getItem('bekantans_cash_data');
-    window.cashData = savedCashData ? JSON.parse(savedCashData) : {};
+    // Initialize Firebase if not already initialized
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
 
-    const savedTravelData = localStorage.getItem('bekantans_travel_data');
-    window.travelData = savedTravelData ? JSON.parse(savedTravelData) : [];
+    // Data State
+    window.people = [];
+    window.items = [];
+    window.cashData = {};
+    window.travelData = [];
 
     function saveState() {
-        localStorage.setItem('bekantans_people', JSON.stringify(window.people));
-        localStorage.setItem('bekantans_cash_data', JSON.stringify(window.cashData));
-        localStorage.setItem('bekantans_travel_data', JSON.stringify(window.travelData));
-        localStorage.setItem('bekantans_items', JSON.stringify(window.items));
+        db.ref('bekantans_data').set({
+            people: window.people,
+            items: window.items,
+            cashData: window.cashData,
+            travelData: window.travelData
+        });
     }
 
     // --- Selectors ---
@@ -1137,9 +1153,22 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- Init ---
-    renderPeople();
-    renderItems();
-    renderCashFund();
+    // --- Init & Sync ---
+    db.ref('bekantans_data').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            window.people = data.people || [];
+            window.items = data.items || [];
+            window.cashData = data.cashData || {};
+            window.travelData = data.travelData || [];
+            
+            // Re-render everything when data changes
+            renderPeople();
+            renderItems();
+            renderCashFund();
+            renderTravelJournal();
+        }
+    });
+
     showView('landing');
 });

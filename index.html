@@ -111,7 +111,7 @@
 
 
 
-            <div id="individual-results" class="results-grid mt-4"></div>
+            <div id="individual-results" class="results-grid mt-4" style="display: none;"></div>
 
             <div class="sticky-summary">
                 <div class="summary-top">
@@ -122,6 +122,19 @@
                     <button id="calculate-btn" class="primary-btn full-btn">Generate Split</button>
                 </div>
             </div>
+        </section>
+
+        <!-- SPLIT RESULTS VIEW -->
+        <section id="split-results-view" class="split-results-view hidden">
+            <div class="view-header-row">
+                <button class="back-btn" onclick="window.showView('landing')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Back to Splitter
+                </button>
+                <h1 class="view-title">Split Summary</h1>
+            </div>
+            
+            <div id="full-results-grid" class="results-grid mt-4"></div>
         </section>
 
         <!-- CASH FUND VIEW -->

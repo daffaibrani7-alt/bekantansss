@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('bekantans_people', JSON.stringify(window.people));
         localStorage.setItem('bekantans_cash_data', JSON.stringify(window.cashData));
         localStorage.setItem('bekantans_travel_data', JSON.stringify(window.travelData));
+        localStorage.setItem('bekantans_items', JSON.stringify(window.items));
     }
 
     // --- Selectors ---
@@ -42,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cashView = document.getElementById('cash-fund-view');
     const travelView = document.getElementById('travel-view');
     const travelDetailsView = document.getElementById('travel-details-view');
+    const splitResultsView = document.getElementById('split-results-view');
+    const fullResultsGrid = document.getElementById('full-results-grid');
     const navSplit = document.getElementById('nav-split');
     const navCash = document.getElementById('nav-cash');
     const navTravel = document.getElementById('nav-travel');
@@ -55,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cashList = document.getElementById('cash-people-list');
     const monthDisplay = document.getElementById('current-month-display');
     const totalCollectedDisplay = document.getElementById('total-cash-collected');
+    const calculateBtn = document.getElementById('calculate-btn');
     
     const modalOverlay = document.getElementById('modal-overlay');
     const modalTitle = document.getElementById('modal-title');
@@ -68,6 +72,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDate = new Date();
     let currentModalAction = '';
     const CASH_TARGET = 100000;
+
+    window.changeTarget = (monthKey) => {
+        const currentTarget = window.cashData[monthKey].target || CASH_TARGET;
+        modalTitle.textContent = 'Set Monthly Target';
+        modalContent.innerHTML = `
+            <div class="input-group">
+                <label>Target Amount (Rp) for ${monthKey}</label>
+                <input type="number" id="m-target-amount" value="${currentTarget}" autofocus>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">This will be used to calculate contributions for this specific month.</p>
+            </div>
+        `;
+        currentModalAction = 'change-target-' + monthKey;
+        modalOverlay.classList.remove('hidden');
+        document.getElementById('m-target-amount').focus();
+    };
 
     const avatarColors = [
         'linear-gradient(135deg, #6366f1, #a855f7)', 
@@ -89,8 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Navigation ---
-    function showView(viewName) {
-        [landingView, mainView, cashView, travelView, travelDetailsView].forEach(v => v?.classList.add('hidden'));
+    window.showView = function(viewName) {
+        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView].forEach(v => v?.classList.add('hidden'));
         [navSplit, navCash, navTravel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
         document.body.classList.remove('travel-journal-active');
@@ -113,7 +132,74 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (viewName === 'landing') {
             landingView.classList.remove('hidden');
             navSplit.classList.add('active');
+        } else if (viewName === 'split-results') {
+            splitResultsView.classList.remove('hidden');
+            navSplit.classList.add('active');
         }
+    }
+
+    // Add CSS for travel journal background if not exists
+    if (!document.getElementById('travel-bg-style')) {
+    window.customConfirm = function(message, onConfirm) {
+        modalTitle.textContent = 'Confirmation';
+        modalContent.innerHTML = `<p style="padding: 1.5rem 0; font-size: 1.1rem; line-height: 1.6; opacity: 0.9; text-align: center;">${message}</p>`;
+        const saveBtn = document.getElementById('modal-save');
+        saveBtn.textContent = 'Confirm';
+        saveBtn.style.background = '#ff4757';
+        
+        currentModalAction = 'confirm';
+        window.confirmCallback = onConfirm;
+        modalOverlay.classList.remove('hidden');
+    };
+
+    window.closeModal = () => {
+        modalOverlay.classList.add('hidden');
+        const saveBtn = document.getElementById('modal-save');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.background = '';
+    };
+
+    const style = document.createElement('style');
+        style.id = 'travel-bg-style';
+        style.innerHTML = `
+            body.travel-journal-active {
+                background: #000;
+                overflow-x: hidden;
+            }
+            body.travel-journal-active::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: 
+                    radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
+                filter: blur(80px);
+                animation: bgMove 20s infinite alternate ease-in-out;
+                z-index: -1;
+            }
+            @keyframes bgMove {
+                from { transform: scale(1) rotate(0deg); }
+                to { transform: scale(1.2) rotate(5deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Scroll Handler for Navbar
+    const navbar = document.querySelector('.navbar');
+    window.onscroll = () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    };
+
+    if (calculateBtn) {
+        calculateBtn.onclick = () => {
+            window.showView('split-results');
+            window.calculate('full');
+        };
     }
 
     navLogo.onclick = () => showView('landing');
@@ -131,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.people.forEach(person => {
             const avatar = document.createElement('div');
             avatar.className = 'participant-avatar';
+            avatar.dataset.name = person.name;
             avatar.style.background = person.color || avatarColors[0];
             avatar.innerHTML = `
                 <span class="avatar-initial">${person.name.charAt(0).toUpperCase()}</span>
@@ -267,29 +354,27 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const detailsView = document.getElementById('travel-details-view');
         detailsView.innerHTML = `
-            <div class="details-hero" style="background-image: url('${dest.image}')">
+            <div class="details-hero" style="--hero-bg: url('${dest.image}')">
                 <div class="details-hero-overlay"></div>
                 <button class="back-btn" onclick="window.showView('travel')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     Back to Journal
                 </button>
                 <div class="details-hero-content">
+                    <h1>${dest.name}</h1>
                     <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
-                        <div>
-                            <h1>${dest.name}</h1>
-                            <div class="details-meta">
-                                <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${dest.location}</span>
-                                <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${dest.duration}</span>
-                                <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${dest.date}</span>
-                            </div>
+                        <div class="details-meta">
+                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${dest.location}</span>
+                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${dest.duration}</span>
+                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${dest.date}</span>
                         </div>
                         <div class="details-expense-badge">
                             <div class="badge-icon">
-                                <span style="font-weight: 900; font-size: 1.1rem; letter-spacing: -0.5px;">Rp</span>
+                                <span style="font-weight: 900; font-size: 1.2rem; letter-spacing: -0.5px;">Rp</span>
                             </div>
                             <div class="badge-text">
                                 <span class="badge-label">Total Expense</span>
-                                <span class="badge-amount">${formatRupiah(dest.cost)}</span>
+                                <span class="badge-amount" style="font-size: 1.6rem; font-weight: 900; color: white; line-height: 1;">${formatRupiah(dest.cost)}</span>
                             </div>
                         </div>
                     </div>
@@ -543,25 +628,25 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteDay = (destId, day) => {
-        if (!confirm(`Are you sure you want to delete Day ${day}? This will remove all activities on this day.`)) return;
-        
-        const dest = window.travelData.find(d => d.id === destId);
-        if (dest) {
-            const currentDays = parseInt(dest.duration) || 0;
-            if (currentDays <= 1) return;
+        window.customConfirm(`Are you sure you want to delete Day ${day}? This will remove all activities on this day.`, () => {
+            const dest = window.travelData.find(d => d.id === destId);
+            if (dest) {
+                const currentDays = parseInt(dest.duration) || 0;
+                if (currentDays <= 1) return;
 
-            if (dest.itinerary) {
-                dest.itinerary = dest.itinerary.filter(act => act.day !== day);
-                dest.itinerary.forEach(act => {
-                    if (act.day > day) act.day--;
-                });
+                if (dest.itinerary) {
+                    dest.itinerary = dest.itinerary.filter(act => act.day !== day);
+                    dest.itinerary.forEach(act => {
+                        if (act.day > day) act.day--;
+                    });
+                }
+                
+                dest.duration = `${currentDays - 1} Days`;
+                saveState();
+                renderItinerary(dest);
+                renderTravelJournal();
             }
-            
-            dest.duration = `${currentDays - 1} Days`;
-            saveState();
-            renderItinerary(dest);
-            renderTravelJournal();
-        }
+        });
     };
 
     window.addActivity = (destId, day) => {
@@ -586,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.items.forEach(item => {
             item.assignees = item.assignees.filter(pId => pId !== Number(id));
         });
+        document.documentElement.style.setProperty('--hero-bg', 'none');
         saveState();
         renderPeople();
         renderItems();
@@ -629,13 +715,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.calculate();
     };
 
-    window.calculate = function() {
+    window.calculate = function(target = 'inline') {
         const personDetails = {};
         window.people.forEach(p => personDetails[p.id] = { total: 0, items: [] });
 
         window.items.forEach(item => {
             if (item.assignees.length > 0) {
-                const sharePrice = item.price; 
+                const sharePrice = item.price / item.assignees.length; 
                 item.assignees.forEach(pId => {
                     if (personDetails[pId]) {
                         personDetails[pId].total += sharePrice;
@@ -645,8 +731,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (individualResults) {
-            individualResults.innerHTML = '';
+        const targetGrid = target === 'full' ? fullResultsGrid : individualResults;
+
+        if (targetGrid) {
+            targetGrid.innerHTML = '';
             window.people.forEach(person => {
                 const details = personDetails[person.id];
                 if (!details || details.total === 0) return;
@@ -674,10 +762,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         `).join('')}
                     </div>
                 `;
-                individualResults.appendChild(card);
+                targetGrid.appendChild(card);
             });
         }
-
+        
         if (stickyTotalDisplay) {
             const sum = window.items.reduce((acc, i) => acc + i.price, 0);
             stickyTotalDisplay.textContent = formatRupiah(sum);
@@ -694,16 +782,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const monthKey = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         monthDisplay.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-
         if (!window.cashData[monthKey]) window.cashData[monthKey] = {};
+        if (!window.cashData[monthKey].target) window.cashData[monthKey].target = CASH_TARGET;
+
+        const currentTarget = window.cashData[monthKey].target;
+        const targetInfo = document.getElementById('cash-target-info');
+        if (targetInfo) {
+            targetInfo.innerHTML = `
+                ${formatRupiah(currentTarget)}
+                <div class="edit-icon" title="Change Target">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </div>
+            `;
+            targetInfo.style.cursor = 'pointer';
+            targetInfo.onclick = () => window.changeTarget(monthKey);
+        }
 
         cashList.innerHTML = '';
         let totalCollected = 0;
+        
         // Calculate cumulative total from all months up to the current one
         Object.keys(window.cashData).forEach(mKey => {
             if (mKey <= monthKey) {
-                Object.values(window.cashData[mKey]).forEach(isPaid => {
-                    if (isPaid === true) totalCollected += CASH_TARGET;
+                const monthTarget = window.cashData[mKey].target || CASH_TARGET;
+                Object.entries(window.cashData[mKey]).forEach(([key, isPaid]) => {
+                    if (key !== 'target' && isPaid === true) {
+                        totalCollected += monthTarget;
+                    }
                 });
             }
         });
@@ -908,15 +1013,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderItinerary(dest);
                 }
             }
+        } else if (currentModalAction.startsWith('change-target-')) {
+            const monthKey = currentModalAction.replace('change-target-', '');
+            const newTarget = parseFloat(document.getElementById('m-target-amount').value);
+            if (!isNaN(newTarget)) {
+                window.cashData[monthKey].target = newTarget;
+                saveState();
+            }
+        } else if (currentModalAction === 'confirm') {
+            if (window.confirmCallback) window.confirmCallback();
         }
         modalOverlay.classList.add('hidden');
+        const saveBtn = document.getElementById('modal-save');
+        saveBtn.textContent = 'Save';
+        saveBtn.style.background = '';
         renderPeople();
         renderItems();
         renderCashFund();
         renderTravelJournal();
     };
 
-    modalCancel.onclick = () => modalOverlay.classList.add('hidden');
+    modalCancel.onclick = window.closeModal;
 
     document.getElementById('prev-month').onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCashFund(); };
     document.getElementById('next-month').onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCashFund(); };
@@ -925,9 +1042,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         if (e.target.closest('.delete-dest-btn')) {
             const id = Number(e.target.closest('.delete-dest-btn').dataset.id);
-            window.travelData = window.travelData.filter(d => d.id !== id);
-            saveState();
-            renderTravelJournal();
+            window.customConfirm('Are you sure you want to delete this destination?', () => {
+                window.travelData = window.travelData.filter(d => d.id !== id);
+                saveState();
+                renderTravelJournal();
+            });
         }
         if (e.target.closest('.edit-dest-btn')) {
             const id = Number(e.target.closest('.edit-dest-btn').dataset.id);

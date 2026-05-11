@@ -23,10 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedCashData = localStorage.getItem('bekantans_cash_data');
     window.cashData = savedCashData ? JSON.parse(savedCashData) : {};
 
-    window.travelData = [
-        { id: 1, name: 'Nusa Penida', location: 'Bali, Indonesia', duration: '3 Days', cost: 1500000, date: '2024-05-10', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4' },
-        { id: 2, name: 'Borobudur Temple', location: 'Yogyakarta, Indonesia', duration: '2 Days', cost: 750000, date: '2024-05-20', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272' },
-        { id: 3, name: 'Raja Ampat', location: 'West Papua, Indonesia', duration: '5 Days', cost: 3500000, date: '2024-06-15', image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf' }
+    const savedTravelData = localStorage.getItem('bekantans_travel_data');
+    window.travelData = savedTravelData ? JSON.parse(savedTravelData) : [
+        { id: 1, name: 'Nusa Penida', location: 'Bali, Indonesia', duration: '0 Days', cost: 1500000, date: '2024-05-10', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4', itinerary: [], album: [] },
+        { id: 2, name: 'Borobudur Temple', location: 'Yogyakarta, Indonesia', duration: '0 Days', cost: 750000, date: '2024-05-20', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272', itinerary: [], album: [] },
+        { id: 3, name: 'Raja Ampat', location: 'West Papua, Indonesia', duration: '0 Days', cost: 3500000, date: '2024-06-15', image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf', itinerary: [], album: [] }
     ];
 
     function saveState() {
@@ -172,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="input-group">
                     <label>Duration</label>
-                    <input type="text" id="m-dest-duration" placeholder="e.g. 3 Days">
+                    <input type="text" id="m-dest-duration" placeholder="e.g. 0 Days (Default)">
                 </div>
                 <div class="input-group">
                     <label>Date</label>
@@ -300,20 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="details-body">
                 <div class="itinerary-view">
-                    <div class="empty-state">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        <h3>No Itinerary Yet</h3>
-                        <p>Plan your daily activities and schedules here.</p>
-                        <button class="action-btn-pill" style="margin-top: 1rem;">+ Add Activity</button>
-                    </div>
+                    <!-- Itinerary will be injected here -->
                 </div>
                 <div class="album-view hidden">
-                    <div class="empty-state">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        <h3>Album is Empty</h3>
-                        <p>Upload memories and photos from your trip to ${dest.name}.</p>
-                        <button class="action-btn-pill" style="margin-top: 1rem;">+ Upload Photos</button>
-                    </div>
+                    <!-- Album will be injected here -->
                 </div>
             </div>
         `;
@@ -332,6 +323,262 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
         detailsView.classList.remove('hidden');
+        renderItinerary(dest);
+        renderAlbum(dest);
+    };
+
+    window.selectedPhotos = new Set();
+
+    window.renderAlbum = function(dest) {
+        const albumView = document.querySelector('.album-view');
+        if (!albumView) return;
+
+        const photos = dest.album || [];
+        const isAnySelected = window.selectedPhotos.size > 0;
+        
+        let html = `
+            <div class="album-header">
+                <div class="photo-count-badge">
+                    <div class="count-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <div class="count-info-stack">
+                        <div class="count-value">${photos.length}</div>
+                        <div class="count-text">Photos</div>
+                    </div>
+                </div>
+                
+                ${isAnySelected ? `
+                    <div class="selection-toolbar">
+                        <div class="selection-info">
+                            <div class="selection-count-pill">${window.selectedPhotos.size}</div>
+                            <div class="selection-text">Selected</div>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button class="btn-toolbar btn-toolbar-download" onclick="window.bulkDownload(${dest.id})">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                Download
+                            </button>
+                            <button class="btn-toolbar btn-toolbar-delete" onclick="window.bulkDelete(${dest.id})">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Delete
+                            </button>
+                            <button class="btn-toolbar btn-toolbar-cancel" onclick="window.clearSelection(${dest.id})">Cancel</button>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <input type="file" id="album-upload-input" hidden accept="image/*" multiple onchange="window.handleAlbumUpload(event, ${dest.id})">
+                <button class="action-btn-pill" onclick="document.getElementById('album-upload-input').click()">+ Upload Photos</button>
+            </div>
+        `;
+
+        if (photos.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <h3>Album is Empty</h3>
+                    <p>No photos uploaded yet for this destination.</p>
+                </div>
+            `;
+        } else {
+            html += '<div class="album-grid">';
+            photos.forEach((photo, index) => {
+                const isSelected = window.selectedPhotos.has(index);
+                html += `
+                    <div class="album-item ${isSelected ? 'selected' : ''}" onclick="window.toggleSelection(${dest.id}, ${index})">
+                        <div class="photo-checkbox"></div>
+                        <img src="${photo}" alt="Trip Photo">
+                        <div class="photo-overlay">
+                            <button class="photo-btn" onclick="event.stopPropagation(); window.downloadPhoto('${photo}', 'trip-photo-${index}.png')" title="Download">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            </button>
+                            <button class="photo-btn delete-photo" onclick="event.stopPropagation(); window.deletePhoto(${dest.id}, ${index})" title="Delete">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        albumView.innerHTML = html;
+    };
+
+    window.toggleSelection = (destId, index) => {
+        if (window.selectedPhotos.has(index)) {
+            window.selectedPhotos.delete(index);
+        } else {
+            window.selectedPhotos.add(index);
+        }
+        const dest = window.travelData.find(d => d.id === destId);
+        renderAlbum(dest);
+    };
+
+    window.clearSelection = (destId) => {
+        window.selectedPhotos.clear();
+        const dest = window.travelData.find(d => d.id === destId);
+        renderAlbum(dest);
+    };
+
+    window.bulkDelete = (destId) => {
+        if (!confirm(`Delete ${window.selectedPhotos.size} selected photos?`)) return;
+        const dest = window.travelData.find(d => d.id === destId);
+        if (dest && dest.album) {
+            // Filter out selected indices
+            const newAlbum = dest.album.filter((_, index) => !window.selectedPhotos.has(index));
+            dest.album = newAlbum;
+            window.selectedPhotos.clear();
+            saveState();
+            renderAlbum(dest);
+        }
+    };
+
+    window.bulkDownload = (destId) => {
+        const dest = window.travelData.find(d => d.id === destId);
+        if (dest && dest.album) {
+            window.selectedPhotos.forEach(index => {
+                window.downloadPhoto(dest.album[index], `trip-photo-${index}.png`);
+            });
+        }
+    };
+
+    window.handleAlbumUpload = (event, destId) => {
+        const dest = window.travelData.find(d => d.id === destId);
+        if (!dest) return;
+        
+        const files = event.target.files;
+        if (!files.length) return;
+
+        if (!dest.album) dest.album = [];
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                dest.album.push(e.target.result);
+                saveState();
+                renderAlbum(dest);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    window.deletePhoto = (destId, photoIndex) => {
+        if (!confirm('Delete this photo from the album?')) return;
+        const dest = window.travelData.find(d => d.id === destId);
+        if (dest && dest.album) {
+            dest.album.splice(photoIndex, 1);
+            saveState();
+            renderAlbum(dest);
+        }
+    };
+
+    window.downloadPhoto = (dataUrl, filename) => {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.renderItinerary = function(dest) {
+        const itineraryView = document.querySelector('.itinerary-view');
+        if (!itineraryView) return;
+
+        const duration = parseInt(dest.duration) || 0;
+        let html = '<div class="itinerary-timeline">';
+        
+        if (duration === 0) {
+            html += `
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <h3>No Days Added</h3>
+                    <p>Start your journey by adding the first day!</p>
+                </div>
+            `;
+        } else {
+            for (let i = 1; i <= duration; i++) {
+                const dayActivities = (dest.itinerary || []).filter(act => act.day === i);
+                
+                html += `
+                    <div class="itinerary-day-card glass-card">
+                        <div class="day-header">
+                            <h3>Day ${i}</h3>
+                            <div style="display: flex; gap: 0.8rem; align-items: center;">
+                                <button class="action-btn-pill" onclick="window.addActivity(${dest.id}, ${i})">+ Add Activity</button>
+                                <button class="action-btn-icon delete" onclick="window.deleteDay(${dest.id}, ${i})" title="Delete Day">×</button>
+                            </div>
+                        </div>
+                        <div class="day-activities">
+                            ${dayActivities.length > 0 ? dayActivities.map(act => `
+                                <div class="activity-item">
+                                    <span class="activity-time">${act.time}</span>
+                                    <span class="activity-text">${act.text}</span>
+                                </div>
+                            `).join('') : '<p class="no-activities">No activities planned for this day.</p>'}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        html += `
+            <div class="add-day-container">
+                <button class="primary-btn" onclick="window.addDay(${dest.id})">+ Add Day</button>
+            </div>
+        </div>`;
+        itineraryView.innerHTML = html;
+    };
+
+    window.addDay = (destId) => {
+        const dest = window.travelData.find(d => d.id === destId);
+        if (dest) {
+            const currentDays = parseInt(dest.duration) || 0;
+            dest.duration = `${currentDays + 1} Days`;
+            saveState();
+            renderItinerary(dest);
+            renderTravelJournal();
+        }
+    };
+
+    window.deleteDay = (destId, day) => {
+        if (!confirm(`Are you sure you want to delete Day ${day}? This will remove all activities on this day.`)) return;
+        
+        const dest = window.travelData.find(d => d.id === destId);
+        if (dest) {
+            const currentDays = parseInt(dest.duration) || 0;
+            if (currentDays <= 1) return;
+
+            if (dest.itinerary) {
+                dest.itinerary = dest.itinerary.filter(act => act.day !== day);
+                dest.itinerary.forEach(act => {
+                    if (act.day > day) act.day--;
+                });
+            }
+            
+            dest.duration = `${currentDays - 1} Days`;
+            saveState();
+            renderItinerary(dest);
+            renderTravelJournal();
+        }
+    };
+
+    window.addActivity = (destId, day) => {
+        modalTitle.textContent = `Add Activity - Day ${day}`;
+        modalContent.innerHTML = `
+            <div class="input-group">
+                <label>Time</label>
+                <input type="text" id="m-act-time" placeholder="e.g. 08:00" autofocus>
+            </div>
+            <div class="input-group">
+                <label>Activity</label>
+                <input type="text" id="m-act-text" placeholder="e.g. Breakfast at Hotel">
+            </div>
+        `;
+        currentModalAction = `add-activity-${destId}-${day}`;
+        modalOverlay.classList.remove('hidden');
+        document.getElementById('m-act-time').focus();
     };
 
     window.removePerson = function(id) {
@@ -452,14 +699,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cashList.innerHTML = '';
         let totalCollected = 0;
+        // Calculate cumulative total from all months up to the current one
+        Object.keys(window.cashData).forEach(mKey => {
+            if (mKey <= monthKey) {
+                Object.values(window.cashData[mKey]).forEach(isPaid => {
+                    if (isPaid === true) totalCollected += CASH_TARGET;
+                });
+            }
+        });
 
-        console.log('Rendering Cash Fund for', monthKey, 'with', window.people.length, 'people');
+        console.log('Rendering Cash Fund for', monthKey, 'with', window.people.length, 'people. Cumulative Total:', totalCollected);
 
         window.people.forEach(person => {
             if (!person || !person.name) return;
             
             const isPaid = window.cashData[monthKey][person.id] || false;
-            if (isPaid) totalCollected += CASH_TARGET;
+            // (The individual card status still reflects the current month)
 
             const card = document.createElement('div');
             card.className = `cash-person-card ${isPaid ? 'paid' : 'unpaid'}`;
@@ -544,6 +799,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (travelTotalDisplay) travelTotalDisplay.textContent = formatRupiah(totalCost);
+        
+        // Count destinations
+        const totalDestDisplay = document.getElementById('total-destinations-count');
+        if (totalDestDisplay) {
+            totalDestDisplay.textContent = window.travelData.length || 0;
+        }
     }
 
     // --- Events ---
@@ -564,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (currentModalAction === 'add-destination') {
             const name = document.getElementById('m-dest-name').value.trim();
             const location = document.getElementById('m-dest-location').value.trim();
-            const duration = document.getElementById('m-dest-duration').value.trim() || '1 Day';
+            const duration = document.getElementById('m-dest-duration').value.trim() || '0 Days';
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
             const fileInput = document.getElementById('m-dest-image-file');
@@ -630,6 +891,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 saveDest(window.travelData[destIndex].image);
                 return;
+            }
+        } else if (currentModalAction.startsWith('add-activity-')) {
+            const parts = currentModalAction.split('-');
+            const destId = Number(parts[2]);
+            const day = Number(parts[3]);
+            const time = document.getElementById('m-act-time').value.trim();
+            const text = document.getElementById('m-act-text').value.trim();
+            
+            if (time && text) {
+                const dest = window.travelData.find(d => d.id === destId);
+                if (dest) {
+                    if (!dest.itinerary) dest.itinerary = [];
+                    dest.itinerary.push({ day, time, text });
+                    saveState();
+                    renderItinerary(dest);
+                }
             }
         }
         modalOverlay.classList.add('hidden');
@@ -710,6 +987,40 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         if (coinContainer && coinContainer.children.length < 30) createCoin();
     }, 1500);
+
+    // --- Receipt Upload & OCR Mock ---
+    const billImageInput = document.getElementById('bill-image');
+    const ocrStatus = document.getElementById('ocr-status');
+    const ocrError = document.getElementById('ocr-error');
+
+    if (billImageInput) {
+        billImageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show loader
+            const heroContent = document.getElementById('hero-main-content');
+            if (heroContent) heroContent.classList.add('hidden');
+            ocrStatus.classList.remove('hidden');
+
+            // Simulate OCR Processing
+            setTimeout(() => {
+                // Mock detected items
+                const mockItems = [
+                    { id: Date.now() + 1, name: 'Premium Wagyu Burger', price: 125000, assignees: [] },
+                    { id: Date.now() + 2, name: 'Truffle Fries', price: 45000, assignees: [] },
+                    { id: Date.now() + 3, name: 'Iced Lychee Tea', price: 35000, assignees: [] },
+                    { id: Date.now() + 4, name: 'Service Charge (10%)', price: 20500, assignees: [] }
+                ];
+
+                window.items = mockItems;
+                ocrStatus.classList.add('hidden');
+                if (heroContent) heroContent.classList.remove('hidden');
+                
+                showView('split');
+            }, 2500);
+        };
+    }
 
     // --- Init ---
     renderPeople();

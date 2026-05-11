@@ -24,11 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cashData = savedCashData ? JSON.parse(savedCashData) : {};
 
     const savedTravelData = localStorage.getItem('bekantans_travel_data');
-    window.travelData = savedTravelData ? JSON.parse(savedTravelData) : [
-        { id: 1, name: 'Nusa Penida', location: 'Bali, Indonesia', duration: '0 Days', cost: 1500000, date: '2024-05-10', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4', itinerary: [], album: [] },
-        { id: 2, name: 'Borobudur Temple', location: 'Yogyakarta, Indonesia', duration: '0 Days', cost: 750000, date: '2024-05-20', image: 'https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272', itinerary: [], album: [] },
-        { id: 3, name: 'Raja Ampat', location: 'West Papua, Indonesia', duration: '0 Days', cost: 3500000, date: '2024-06-15', image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf', itinerary: [], album: [] }
-    ];
+    window.travelData = savedTravelData ? JSON.parse(savedTravelData) : [];
 
     function saveState() {
         localStorage.setItem('bekantans_people', JSON.stringify(window.people));

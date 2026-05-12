@@ -1522,12 +1522,14 @@ body.travel-journal-active #coin-container {
 }
 
 .destination-card {
-    border-radius: 32px;
+    border-radius: 36px;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     flex-direction: column;
     min-height: 480px;
+    padding: 0 !important; /* Remove glass-card padding to let image be flush */
+    background: rgba(15, 15, 25, 0.4);
 }
 
 .destination-card:hover {
@@ -1537,10 +1539,11 @@ body.travel-journal-active #coin-container {
 }
 
 .dest-image {
-    height: 260px;
+    height: 280px;
     background-size: cover;
     background-position: center;
     position: relative;
+    margin: 0;
 }
 
 .dest-actions {
@@ -1579,8 +1582,8 @@ body.travel-journal-active #coin-container {
 .dest-meta-header {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
-    margin-bottom: 1.2rem;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
 }
 
 .dest-meta-row {
@@ -1593,12 +1596,13 @@ body.travel-journal-active #coin-container {
 .dest-location, .dest-duration {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    font-size: 0.8rem;
+    gap: 0.5rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 1.2px;
     padding: 0;
+    opacity: 0.9;
 }
 
 .meta-icon-box {
@@ -1672,7 +1676,7 @@ body.travel-journal-active #coin-container {
 }
 
 .dest-info {
-    padding: 1.8rem;
+    padding: 2rem 2.2rem 2.5rem;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -1680,33 +1684,37 @@ body.travel-journal-active #coin-container {
 }
 
 .dest-name {
-    font-size: 1.4rem;
-    font-weight: 850;
+    font-size: 1.8rem;
+    font-weight: 900;
     color: white;
-    margin-bottom: 1.5rem;
-    letter-spacing: -0.5px;
+    margin-bottom: 1rem;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
 }
 
 .dest-footer {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: flex-end;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dest-cost-label {
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.7rem;
+    font-weight: 800;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    margin-bottom: 0.4rem;
+    display: block;
 }
 
 .dest-cost-value {
-    font-size: 1.2rem;
-    font-weight: 900;
+    font-size: 1.6rem;
+    font-weight: 950;
     color: white;
+    letter-spacing: -0.5px;
 }
 
 /* --- TRAVEL DETAILS VIEW --- */
@@ -2027,6 +2035,89 @@ body.travel-journal-active #coin-container {
 .travel-view .travel-stats .stat-card {
     min-width: 0 !important;
     flex: none !important;
+}
+
+/* --- TRAVEL FILTER SLIDER --- */
+.filter-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3.5rem;
+    margin-top: 1rem;
+}
+
+.travel-filter-slider {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 6px;
+    border-radius: 100px;
+    display: flex;
+    position: relative;
+    gap: 4px;
+    backdrop-filter: blur(20px);
+    width: 320px;
+}
+
+.filter-option {
+    flex: 1;
+    padding: 0.85rem 0;
+    text-align: center;
+    border-radius: 100px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.filter-option.active {
+    color: white;
+}
+
+.slider-indicator {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    bottom: 6px;
+    width: calc(50% - 8px);
+    background: var(--accent-gradient);
+    border-radius: 100px;
+    z-index: 1;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.travel-filter-slider[data-active="wishlist"] .slider-indicator {
+    left: calc(50% + 2px);
+}
+
+.wishlist-badge {
+    position: absolute;
+    bottom: 1.2rem;
+    left: 1.2rem;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 850;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 10;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.wishlist-badge svg {
+    color: #fb7185;
+    filter: drop-shadow(0 0 5px rgba(251, 113, 133, 0.5));
 }
 
 /* --- ITINERARY --- */
@@ -2474,6 +2565,30 @@ body.spin-wheel-active::after {
     z-index: 1;
 }
 
+.center-header {
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+
+.animate-fun {
+    display: inline-block;
+    animation: colorCycle 4s infinite ease-in-out;
+}
+
+@keyframes colorCycle {
+    0%, 100% { 
+        color: #a855f7;
+        -webkit-text-fill-color: #a855f7;
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8));
+    }
+    50% { 
+        color: #ef4444;
+        -webkit-text-fill-color: #ef4444;
+        filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.9));
+    }
+}
+
 .view-subtitle {
     color: var(--text-muted);
     font-size: 1.1rem;
@@ -2715,10 +2830,46 @@ body.spin-wheel-active::after {
     margin-bottom: 1rem;
 }
 
+.winner-modal .modal-header {
+    text-align: center;
+    padding-bottom: 0;
+}
+
+.animate-winner {
+    font-size: 3.8rem;
+    font-weight: 950;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899, #f43f5e, #f59e0b, #10b981);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: winnerRainbow 3s linear infinite, winnerFloat 2s infinite ease-in-out;
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.4));
+    line-height: 1.2;
+}
+
+@keyframes winnerRainbow {
+    to { background-position: 300% center; }
+}
+
+@keyframes winnerFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.05); }
+}
+
 @media (max-width: 600px) {
+    .spin-wheel-view {
+        margin-top: 160px; /* More space for navbar on mobile */
+        margin-bottom: 80px;
+    }
     .wheel-container-wrapper {
         width: 320px;
         height: 320px;
+        margin: 2rem auto;
+    }
+    .animate-fun {
+        font-size: 2.2rem;
     }
 }
 
@@ -2838,17 +2989,33 @@ body.spin-wheel-active::after {
     }
 
     .details-hero {
-        height: 40vh;
-        border-radius: 0 0 30px 30px;
+        height: auto;
+        min-height: 60vh;
+        border-radius: 0 0 40px 40px;
+        padding-top: 140px; /* Essential space for fixed navbar */
+    }
+
+    .back-btn {
+        top: 100px;
+        left: 1.5rem;
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
     }
 
     .details-hero-content {
-        padding: 0 1.5rem 2rem;
+        padding: 0 1.5rem 3.5rem;
+    }
+
+    .details-hero-content h1 {
+        font-size: 3.5rem;
+        letter-spacing: -2px;
+        margin-bottom: 1.2rem;
     }
 
     .details-meta {
         flex-direction: column;
         gap: 0.8rem;
+        margin-bottom: 2.5rem;
     }
 
     .details-body {
@@ -2857,7 +3024,18 @@ body.spin-wheel-active::after {
 
     .details-expense-badge {
         width: 100%;
+        padding: 1.2rem;
+        border-radius: 28px;
         justify-content: center;
+    }
+
+    .details-expense-badge .badge-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .details-expense-badge .badge-amount {
+        font-size: 1.8rem;
     }
 }
 

@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cashData = {};
     window.travelData = [];
     window.wheelParticipants = [];
+    window.travelFilter = 'all';
 
     function saveState() {
         db.ref('bekantans_data').set({
@@ -161,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navTravel.classList.add('active');
             document.body.classList.add('travel-journal-active');
             renderTravelJournal();
+            initTravelFilter();
         } else if (viewName === 'wheel') {
             spinWheelView.classList.remove('hidden');
             navWheel.classList.add('active');
@@ -316,6 +318,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="number" id="m-dest-cost" placeholder="e.g. 1500000">
             </div>
             <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" id="m-dest-wishlist" style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="font-weight: 700;">Mark as Wishlist</span>
+                </label>
+            </div>
+            <div class="input-group">
                 <label>Add Photos</label>
                 <div class="image-upload-wrapper" id="image-upload-wrapper" onclick="document.getElementById('m-dest-image-file').click()">
                     <div class="upload-placeholder" id="upload-placeholder">
@@ -373,6 +381,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="input-group">
                 <label>Total Cost (Rp)</label>
                 <input type="number" id="m-dest-cost" value="${dest.cost}">
+            </div>
+            <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" id="m-dest-wishlist" ${dest.isWishlist ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
+                    <span style="font-weight: 700;">Mark as Wishlist</span>
+                </label>
             </div>
             <div class="input-group">
                 <label>Update Photo</label>
@@ -904,13 +918,25 @@ document.addEventListener('DOMContentLoaded', () => {
         destGrid.innerHTML = '';
         let totalCost = 0;
 
-        window.travelData.forEach(dest => {
-            totalCost += dest.cost;
+        const filteredData = window.travelData.filter(dest => {
+            if (window.travelFilter === 'all') return true;
+            if (window.travelFilter === 'wishlist') return dest.isWishlist === true;
+            return true;
+        });
+
+        filteredData.forEach(dest => {
+            if (!dest.isWishlist) totalCost += dest.cost;
             const card = document.createElement('div');
             card.className = 'destination-card glass-card';
             card.setAttribute('onclick', `window.viewDestination(event, ${dest.id})`);
             card.innerHTML = `
                 <div class="dest-image" style="background-image: url('${dest.image}')">
+                    ${dest.isWishlist ? `
+                        <div class="wishlist-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            Wishlist
+                        </div>
+                    ` : ''}
                     <div class="dest-date-premium">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         <span class="dd-day">${formatDate(dest.date, 'badge').day}</span>
@@ -955,11 +981,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (travelTotalDisplay) travelTotalDisplay.textContent = formatRupiah(totalCost);
         
-        // Count destinations
         const totalDestDisplay = document.getElementById('total-destinations-count');
         if (totalDestDisplay) {
-            totalDestDisplay.textContent = window.travelData.length || 0;
+            totalDestDisplay.textContent = filteredData.length || 0;
         }
+    }
+
+    function initTravelFilter() {
+        const slider = document.getElementById('travel-filter-slider');
+        if (!slider) return;
+
+        const options = slider.querySelectorAll('.filter-option');
+        options.forEach(opt => {
+            opt.onclick = () => {
+                const filter = opt.dataset.filter;
+                window.travelFilter = filter;
+                
+                options.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                slider.setAttribute('data-active', filter);
+                
+                renderTravelJournal();
+            };
+        });
+
+        // Sync visual state
+        options.forEach(o => {
+            if (o.dataset.filter === window.travelFilter) {
+                o.classList.add('active');
+            } else {
+                o.classList.remove('active');
+            }
+        });
+        slider.setAttribute('data-active', window.travelFilter);
     }
 
     // --- Events ---
@@ -983,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const duration = document.getElementById('m-dest-duration').value.trim() || '0 Days';
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
+            const isWishlist = document.getElementById('m-dest-wishlist').checked;
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveDest = (imgUrl) => {
@@ -994,7 +1049,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         duration: duration, 
                         cost: cost, 
                         date: date, 
-                        image: imgUrl 
+                        image: imgUrl,
+                        isWishlist: isWishlist
                     });
                     saveState();
                 }
@@ -1024,13 +1080,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const duration = document.getElementById('m-dest-duration').value.trim() || '1 Day';
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
+            const isWishlist = document.getElementById('m-dest-wishlist').checked;
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveDest = (imgUrl) => {
                 if (name) {
                     window.travelData[destIndex] = {
                         ...window.travelData[destIndex],
-                        name: name, location: location || 'Unknown Location', duration: duration, cost: cost, date: date, image: imgUrl
+                        name: name, 
+                        location: location || 'Unknown Location', 
+                        duration: duration, 
+                        cost: cost, 
+                        date: date, 
+                        image: imgUrl,
+                        isWishlist: isWishlist
                     };
                     saveState();
                 }
@@ -1452,10 +1515,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Show result in a POPUP modal
                 modalTitle.textContent = 'WE HAVE A WINNER!';
+                const modalElement = document.querySelector('.modal');
+                if (modalElement) modalElement.classList.add('winner-modal');
+                
                 modalContent.innerHTML = `
                     <div style="text-align: center; padding: 1.5rem 0;">
                         <div class="winner-label" style="margin-bottom: 1rem; color: var(--accent-primary); letter-spacing: 4px; font-weight: 800;">CONGRATULATIONS</div>
-                        <div class="winner-name" style="font-size: 3.5rem; font-weight: 950; margin-bottom: 2rem; color: white; text-shadow: 0 0 30px var(--accent-glow);">${winner ? winner.name : 'Unknown'}</div>
+                        <div class="winner-name animate-winner">${winner ? winner.name : 'Unknown'}</div>
                         <button class="primary-btn" onclick="window.resetWheel()" style="width: 100%; padding: 1.2rem;">Spin Again</button>
                     </div>
                 `;
@@ -1479,6 +1545,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.resetWheel = () => {
         modalOverlay.classList.add('hidden');
+        const modalElement = document.querySelector('.modal');
+        if (modalElement) modalElement.classList.remove('winner-modal');
         window.initWheel();
     };
 

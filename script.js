@@ -61,7 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const navSplit = document.getElementById('nav-split');
     const navCash = document.getElementById('nav-cash');
     const navTravel = document.getElementById('nav-travel');
+    const navWheel = document.getElementById('nav-wheel');
     const navLogo = document.getElementById('nav-logo');
+    const spinWheelView = document.getElementById('spin-wheel-view');
 
     const avatarsContainer = document.getElementById('people-avatars');
     const itemsList = document.getElementById('items-list');
@@ -120,10 +122,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }).format(amount);
     }
 
+    function formatDate(dateStr, format = 'full') {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (format === 'badge') {
+            return {
+                day: date.getDate(),
+                month: date.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase(),
+                year: date.getFullYear()
+            };
+        }
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        return date.toLocaleDateString('en-GB', options);
+    }
+
     // --- Navigation ---
     window.showView = function(viewName) {
-        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView].forEach(v => v?.classList.add('hidden'));
-        [navSplit, navCash, navTravel].forEach(n => n?.classList.remove('active'));
+        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+        [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
         document.body.classList.remove('travel-journal-active');
 
@@ -142,6 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
             navTravel.classList.add('active');
             document.body.classList.add('travel-journal-active');
             renderTravelJournal();
+        } else if (viewName === 'wheel') {
+            spinWheelView.classList.remove('hidden');
+            navWheel.classList.add('active');
+            window.initWheel();
         } else if (viewName === 'landing') {
             landingView.classList.remove('hidden');
             navSplit.classList.add('active');
@@ -219,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     navSplit.onclick = (e) => { e.preventDefault(); showView('landing'); };
     navCash.onclick = (e) => { e.preventDefault(); showView('cash'); };
     navTravel.onclick = (e) => { e.preventDefault(); showView('travel'); };
+    navWheel.onclick = (e) => { e.preventDefault(); showView('wheel'); };
 
     // --- Core Functions ---
     window.renderPeople = function() {
@@ -377,9 +398,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h1>${dest.name}</h1>
                     <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
                         <div class="details-meta">
-                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${dest.location}</span>
-                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${dest.duration}</span>
-                            <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${dest.date}</span>
+                            <span><div class="meta-icon-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div> ${dest.location}</span>
+                            <span><div class="meta-icon-circle duration"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div> ${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
+                            <span><div class="meta-icon-circle date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div> ${formatDate(dest.date)}</span>
                         </div>
                         <div class="details-expense-badge">
                             <div class="badge-icon">
@@ -880,9 +901,11 @@ document.addEventListener('DOMContentLoaded', () => {
             card.setAttribute('onclick', `window.viewDestination(event, ${dest.id})`);
             card.innerHTML = `
                 <div class="dest-image" style="background-image: url('${dest.image}')">
-                    <div class="dest-date">
+                    <div class="dest-date-premium">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        ${dest.date}
+                        <span class="dd-day">${formatDate(dest.date, 'badge').day}</span>
+                        <span class="dd-month">${formatDate(dest.date, 'badge').month}</span>
+                        <span class="dd-year">${formatDate(dest.date, 'badge').year}</span>
                     </div>
                     <div class="dest-actions">
                         <button class="action-btn-icon edit edit-dest-btn" data-id="${dest.id}">
@@ -892,15 +915,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="dest-info">
-                    <div>
+                    <div class="dest-meta-header">
                         <div class="dest-meta-row">
                             <div class="dest-location">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                ${dest.location}
+                                <div class="meta-icon-box">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                </div>
+                                <span>${dest.location}</span>
                             </div>
                             <div class="dest-duration">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                ${dest.duration}
+                                <div class="meta-icon-box">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                                <span>${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
                             </div>
                         </div>
                         <h3 class="dest-name">${dest.name}</h3>
@@ -1173,3 +1200,120 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showView('landing');
 });
+
+    // --- Spin Wheel Logic ---
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    window.initWheel = function() {
+        const canvas = document.getElementById('wheel-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const people = window.people.length > 0 ? window.people : [{name: 'No Participants', color: 'rgba(255,255,255,0.1)'}];
+        
+        const size = canvas.width;
+        const center = size / 2;
+        const radius = size / 2 - 5;
+        const sliceAngle = (2 * Math.PI) / people.length;
+
+        ctx.clearRect(0, 0, size, size);
+
+        people.forEach((person, i) => {
+            const angle = i * sliceAngle;
+            
+            // Draw slice
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.arc(center, center, radius, angle, angle + sliceAngle);
+            ctx.closePath();
+            
+            // Background color for slice
+            if (window.people.length === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            } else {
+                // Generate a consistent color based on index if person color is gradient
+                const colors = ['#6366f1', '#a855f7', '#f43f5e', '#10b981', '#f59e0b', '#0ea5e9', '#ec4899'];
+                ctx.fillStyle = colors[i % colors.length];
+            }
+            ctx.fill();
+            
+            // Slice border
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Text
+            if (window.people.length > 0) {
+                ctx.save();
+                ctx.translate(center, center);
+                ctx.rotate(angle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 20px Outfit';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(person.name, radius - 40, 10);
+                ctx.restore();
+            }
+        });
+    };
+
+    const spinBtn = document.getElementById('wheel-spin-btn');
+    if (spinBtn) {
+        spinBtn.onclick = () => {
+            if (isSpinning) return;
+            if (window.people.length === 0) {
+                window.customConfirm('Please add participants first to use the wheel!', () => showView('split'));
+                return;
+            }
+
+            isSpinning = true;
+            const canvas = document.getElementById('wheel-canvas');
+            const resultDiv = document.getElementById('wheel-result');
+            const winnerName = document.getElementById('winner-name');
+            
+            resultDiv.classList.add('hidden');
+            spinBtn.style.pointerEvents = 'none';
+            spinBtn.style.opacity = '0.5';
+
+            const extraDegrees = 2000 + Math.random() * 2000; 
+            currentRotation += extraDegrees;
+            
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.style.pointerEvents = 'auto';
+                spinBtn.style.opacity = '1';
+                
+                const actualDegrees = currentRotation % 360;
+                const sliceAngle = 360 / window.people.length;
+                
+                // Canvas 0 angle is at 3 o'clock. Pointer is at 12 o'clock (270 deg).
+                // Formula: (PointerAngle - RotationAngle) % 360
+                const pointerAngle = 270;
+                let winningAngle = (pointerAngle - actualDegrees) % 360;
+                if (winningAngle < 0) winningAngle += 360;
+                
+                const winnerIndex = Math.floor(winningAngle / sliceAngle);
+                const winner = window.people[winnerIndex];
+
+                winnerName.textContent = winner.name;
+                resultDiv.classList.remove('hidden');
+                
+                // Success effect
+                window.createSuccessCoins();
+            }, 4000);
+        };
+    }
+
+    window.resetWheel = () => {
+        document.getElementById('wheel-result').classList.add('hidden');
+        window.initWheel();
+    };
+
+    window.createSuccessCoins = () => {
+        for(let i=0; i<20; i++) {
+            setTimeout(() => createCoin(), i * 100);
+        }
+    };

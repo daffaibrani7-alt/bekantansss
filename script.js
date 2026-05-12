@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.travelFilter === 'all') return true;
             if (window.travelFilter === 'wishlist') return dest.isWishlist === true;
             return true;
-        });
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
         filteredData.forEach(dest => {
             if (!dest.isWishlist) totalCost += dest.cost;

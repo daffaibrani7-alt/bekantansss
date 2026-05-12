@@ -145,14 +145,15 @@
         <section id="cash-fund-view" class="cash-fund-view hidden">
             <div class="view-header-row">
                 <h1 class="view-title">Monthly Cash Fund</h1>
-                <div class="cash-actions">
-                    <button class="primary-btn" onclick="window.addPerson()">+ Add Member</button>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn-secondary" onclick="window.resetCashLedger()" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">Reset Ledger</button>
+                    <button class="primary-btn" onclick="window.addPerson()">+ Add Person</button>
                 </div>
-                <div class="month-selector glass-card">
-                    <button class="month-nav" id="prev-month">←</button>
-                    <span id="current-month-display">May 2024</span>
-                    <button class="month-nav" id="next-month">→</button>
-                </div>
+            </div>
+            <div class="month-selector glass-card">
+                <button class="month-nav" id="prev-month">←</button>
+                <span id="current-month-display">May 2024</span>
+                <button class="month-nav" id="next-month">→</button>
             </div>
 
             <div class="cash-stats">
@@ -251,10 +252,35 @@
             </div>
         </div>
     </main>
+
+    <!-- Fullscreen Lightbox -->
+    <div id="lightbox-overlay" class="lightbox-overlay hidden">
+        <button class="lightbox-close" onclick="window.closeFullscreen()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        
+        <button class="lightbox-nav prev" onclick="window.navigateFullscreen(-1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="Fullscreen view">
+            <div class="lightbox-actions">
+                <button class="photo-btn" id="lightbox-download" onclick="" title="Download">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Download</span>
+                </button>
+            </div>
+        </div>
+        
+        <button class="lightbox-nav next" onclick="window.navigateFullscreen(1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+    </div>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-    <script src="script.js?v=25"></script></script></script></script></script></script></script></script></script></script></script></script></script></script></script></script></script>
+    <script src="script.js?v=27"></script>
 </body>
 </html>

@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.travelData = [];
     window.wheelParticipants = [];
     window.travelFilter = 'all';
+    window.currentAlbumDestId = null;
+    window.currentPhotoIndex = 0;
 
     function saveState() {
         db.ref('bekantans_data').set({
@@ -104,6 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
         currentModalAction = 'change-target-' + monthKey;
         modalOverlay.classList.remove('hidden');
         document.getElementById('m-target-amount').focus();
+    };
+
+    window.resetCashLedger = () => {
+        if (confirm('Are you sure you want to reset the entire cash ledger? This will clear all recorded payments across all months.')) {
+            window.cashData = {};
+            saveState();
+            renderCashFund();
+        }
     };
 
     const avatarColors = [
@@ -529,10 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
             photos.forEach((photo, index) => {
                 const isSelected = window.selectedPhotos.has(index);
                 html += `
-                    <div class="album-item ${isSelected ? 'selected' : ''}" onclick="window.toggleSelection(${dest.id}, ${index})">
-                        <div class="photo-checkbox"></div>
-                        <img src="${photo}" alt="Trip Photo">
-                        <div class="photo-overlay">
+                    <div class="album-item ${isSelected ? 'selected' : ''}">
+                        <div class="photo-checkbox" onclick="event.stopPropagation(); window.toggleSelection(${dest.id}, ${index})"></div>
+                        <img src="${photo}" alt="Trip Photo" onclick="window.openFullscreen(${dest.id}, ${index})">
+                        <div class="photo-overlay" onclick="window.openFullscreen(${dest.id}, ${index})">
                             <button class="photo-btn" onclick="event.stopPropagation(); window.downloadPhoto('${photo}', 'trip-photo-${index}.png')" title="Download">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </button>
@@ -605,6 +615,52 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         });
     };
+
+    window.openFullscreen = (destId, index) => {
+        console.log('Opening fullscreen:', destId, index);
+        const dest = window.travelData.find(d => String(d.id) === String(destId));
+        if (!dest || !dest.album) {
+            console.error('Destination or album not found:', destId);
+            return;
+        }
+
+        window.currentAlbumDestId = destId;
+        window.currentPhotoIndex = index;
+
+        const overlay = document.getElementById('lightbox-overlay');
+        const img = document.getElementById('lightbox-img');
+        const downloadBtn = document.getElementById('lightbox-download');
+
+        img.src = dest.album[index];
+        downloadBtn.onclick = () => window.downloadPhoto(dest.album[index], `trip-photo-${index}.png`);
+
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeFullscreen = () => {
+        const overlay = document.getElementById('lightbox-overlay');
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    window.navigateFullscreen = (direction) => {
+        const dest = window.travelData.find(d => d.id === window.currentAlbumDestId);
+        if (!dest || !dest.album) return;
+
+        let newIndex = window.currentPhotoIndex + direction;
+        if (newIndex < 0) newIndex = dest.album.length - 1;
+        if (newIndex >= dest.album.length) newIndex = 0;
+
+        window.openFullscreen(window.currentAlbumDestId, newIndex);
+    };
+
+    // Close on escape key
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.closeFullscreen();
+        if (e.key === 'ArrowLeft') window.navigateFullscreen(-1);
+        if (e.key === 'ArrowRight') window.navigateFullscreen(1);
+    });
 
     window.deletePhoto = (destId, photoIndex) => {
         if (!confirm('Delete this photo from the album?')) return;

@@ -40,13 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.items = [];
     window.cashData = {};
     window.travelData = [];
+    window.wheelParticipants = [];
 
     function saveState() {
         db.ref('bekantans_data').set({
             people: window.people,
             items: window.items,
             cashData: window.cashData,
-            travelData: window.travelData
+            travelData: window.travelData,
+            wheelParticipants: window.wheelParticipants
         });
     }
 
@@ -142,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
         document.body.classList.remove('travel-journal-active');
+        document.body.classList.remove('spin-wheel-active');
 
         if (viewName === 'split') {
             mainView.classList.remove('hidden');
@@ -161,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (viewName === 'wheel') {
             spinWheelView.classList.remove('hidden');
             navWheel.classList.add('active');
+            document.body.classList.add('spin-wheel-active');
             window.initWheel();
         } else if (viewName === 'landing') {
             landingView.classList.remove('hidden');
@@ -173,12 +177,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add CSS for travel journal background if not exists
     if (!document.getElementById('travel-bg-style')) {
-    window.customConfirm = function(message, onConfirm) {
+    window.customConfirm = function(message, onConfirm, hideCancel = false) {
         modalTitle.textContent = 'Confirmation';
         modalContent.innerHTML = `<p style="padding: 1.5rem 0; font-size: 1.1rem; line-height: 1.6; opacity: 0.9; text-align: center;">${message}</p>`;
-        const saveBtn = document.getElementById('modal-save');
-        saveBtn.textContent = 'Confirm';
-        saveBtn.style.background = '#ff4757';
+        modalSave.textContent = 'Confirm';
+        modalSave.style.background = '#ff4757';
+        modalSave.style.display = 'block';
+        
+        if (hideCancel) {
+            modalCancel.style.display = 'none';
+        } else {
+            modalCancel.style.display = 'block';
+        }
         
         currentModalAction = 'confirm';
         window.confirmCallback = onConfirm;
@@ -1147,6 +1157,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (coinContainer && coinContainer.children.length < 30) createCoin();
     }, 1500);
 
+
+
     // --- Receipt Upload & OCR Mock ---
     const billImageInput = document.getElementById('bill-image');
     const ocrStatus = document.getElementById('ocr-status');
@@ -1189,6 +1201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.items = data.items || [];
             window.cashData = data.cashData || {};
             window.travelData = data.travelData || [];
+            window.wheelParticipants = data.wheelParticipants || [];
             
             // Re-render everything when data changes
             renderPeople();
@@ -1199,7 +1212,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     showView('landing');
-});
 
     // --- Spin Wheel Logic ---
     let currentRotation = 0;
@@ -1207,16 +1219,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.initWheel = function() {
         const canvas = document.getElementById('wheel-canvas');
+        const container = document.getElementById('wheel-container');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const people = window.people.length > 0 ? window.people : [{name: 'No Participants', color: 'rgba(255,255,255,0.1)'}];
+        
+        // Use selected participants or show an empty/placeholder wheel
+        const people = window.wheelParticipants || [];
         
         const size = canvas.width;
         const center = size / 2;
         const radius = size / 2 - 5;
-        const sliceAngle = (2 * Math.PI) / people.length;
 
         ctx.clearRect(0, 0, size, size);
+
+        if (people.length === 0) {
+            // Draw Empty Wheel Placeholder with Purple Theme
+            ctx.beginPath();
+            ctx.arc(center, center, radius, 0, 2 * Math.PI);
+            const emptyGrad = ctx.createRadialGradient(center, center, 0, center, center, radius);
+            emptyGrad.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
+            emptyGrad.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
+            ctx.fillStyle = emptyGrad;
+            ctx.fill();
+            
+            // Dashed Border
+            ctx.setLineDash([10, 10]);
+            ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset
+            
+            // Central Icon-like circles
+            ctx.beginPath();
+            ctx.arc(center, center, 60, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.1)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            return;
+        }
+
+        const sliceAngle = (2 * Math.PI) / people.length;
 
         people.forEach((person, i) => {
             const angle = i * sliceAngle;
@@ -1227,93 +1271,222 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.arc(center, center, radius, angle, angle + sliceAngle);
             ctx.closePath();
             
-            // Background color for slice
-            if (window.people.length === 0) {
-                ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            } else {
-                // Generate a consistent color based on index if person color is gradient
-                const colors = ['#6366f1', '#a855f7', '#f43f5e', '#10b981', '#f59e0b', '#0ea5e9', '#ec4899'];
-                ctx.fillStyle = colors[i % colors.length];
-            }
+            // Background color for slice with gradient
+            const colors = [
+                ['#6366f1', '#4f46e5'], // Indigo
+                ['#a855f7', '#9333ea'], // Purple
+                ['#f43f5e', '#e11d48'], // Rose
+                ['#10b981', '#059669'], // Emerald
+                ['#f59e0b', '#d97706'], // Amber
+                ['#0ea5e9', '#0284c7'], // Sky
+                ['#ec4899', '#db2777']  // Pink
+            ];
+            const colorPair = colors[i % colors.length];
+            const grad = ctx.createRadialGradient(center, center, 0, center, center, radius);
+            grad.addColorStop(0, colorPair[0]);
+            grad.addColorStop(1, colorPair[1]);
+            ctx.fillStyle = grad;
             ctx.fill();
             
             // Slice border
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
             ctx.stroke();
 
             // Text
-            if (window.people.length > 0) {
-                ctx.save();
-                ctx.translate(center, center);
-                ctx.rotate(angle + sliceAngle / 2);
-                ctx.textAlign = 'right';
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 20px Outfit';
-                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                ctx.shadowBlur = 4;
-                ctx.fillText(person.name, radius - 40, 10);
-                ctx.restore();
-            }
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.rotate(angle + sliceAngle / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 22px Outfit';
+            ctx.fillText(person.name, radius - 45, 10);
+            ctx.restore();
         });
+
+        // Add inner gloss effect
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, 2 * Math.PI);
+        const gloss = ctx.createRadialGradient(center, center, radius * 0.7, center, center, radius);
+        gloss.addColorStop(0, 'rgba(0,0,0,0)');
+        gloss.addColorStop(1, 'rgba(0,0,0,0.3)');
+        ctx.fillStyle = gloss;
+        ctx.fill();
+    };
+
+    function updateWheelStateClasses() {
+        const btn = document.querySelector('.assign-wheel-btn');
+        if (btn) {
+            if (window.wheelParticipants.length === 0) {
+                btn.classList.add('guide-pulse');
+            } else {
+                btn.classList.remove('guide-pulse');
+            }
+        }
+    }
+
+    // Call this inside showView or whenever data changes
+    const originalShowView = window.showView;
+    window.showView = function(viewName) {
+        if (typeof originalShowView === 'function') originalShowView(viewName);
+        if (viewName === 'wheel') updateWheelStateClasses();
+    };
+
+    window.manageWheelParticipants = () => {
+        modalTitle.textContent = 'Manage Wheel Names';
+        
+        let html = `
+            <div class="input-group">
+                <label>Add Name to Wheel</label>
+                <div style="display: flex; gap: 0.8rem;">
+                    <input type="text" id="m-wheel-name" placeholder="Enter name..." autofocus>
+                    <button class="primary-btn small-btn" onclick="window.addWheelPerson()">Add</button>
+                </div>
+            </div>
+            <div class="wheel-people-list mt-2" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+        `;
+        
+        if (window.wheelParticipants.length === 0) {
+            html += '<p style="text-align: center; color: var(--text-muted); padding: 1rem;">No names added yet.</p>';
+        } else {
+            window.wheelParticipants.forEach(person => {
+                html += `
+                    <div class="wheel-person-card" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.8rem 1.2rem; border-radius: 12px; margin-bottom: 0.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: 700;">${person.name}</span>
+                        <button class="action-btn-icon delete" onclick="window.removeWheelPerson(${person.id})" style="width: 28px; height: 28px;">×</button>
+                    </div>
+                `;
+            });
+        }
+        html += '</div>';
+
+        modalContent.innerHTML = html;
+        modalSave.textContent = 'Done';
+        modalSave.style.display = 'block';
+        modalCancel.style.display = 'block';
+        currentModalAction = 'manage-wheel-done';
+        modalOverlay.classList.remove('hidden');
+        document.getElementById('m-wheel-name').focus();
+    };
+
+    window.addWheelPerson = () => {
+        const input = document.getElementById('m-wheel-name');
+        const name = input.value.trim();
+        if (name) {
+            window.wheelParticipants.push({ id: Date.now(), name });
+            saveState();
+            window.initWheel();
+            window.manageWheelParticipants(); // Re-render modal
+        }
+    };
+
+    window.removeWheelPerson = (id) => {
+        window.wheelParticipants = window.wheelParticipants.filter(p => p.id !== id);
+        saveState();
+        window.initWheel();
+        window.manageWheelParticipants(); // Re-render modal
     };
 
     const spinBtn = document.getElementById('wheel-spin-btn');
     if (spinBtn) {
         spinBtn.onclick = () => {
             if (isSpinning) return;
-            if (window.people.length === 0) {
-                window.customConfirm('Please add participants first to use the wheel!', () => showView('split'));
+            if (window.wheelParticipants.length === 0) {
+                window.customConfirm('Please assign participants to the wheel first!', () => window.manageWheelParticipants(), true);
                 return;
             }
 
             isSpinning = true;
             const canvas = document.getElementById('wheel-canvas');
-            const resultDiv = document.getElementById('wheel-result');
-            const winnerName = document.getElementById('winner-name');
+            const container = document.getElementById('wheel-container');
+            const wrapper = container.parentElement;
             
-            resultDiv.classList.add('hidden');
-            spinBtn.style.pointerEvents = 'none';
-            spinBtn.style.opacity = '0.5';
+            // Capture current rotation from computed style to avoid jumping
+            const style = window.getComputedStyle(canvas);
+            const matrix = style.transform || style.webkitTransform || 'none';
+            let currentAngle = 0;
+            
+            if (matrix !== 'none') {
+                const values = matrix.split('(')[1].split(')')[0].split(',');
+                const a = parseFloat(values[0]);
+                const b = parseFloat(values[1]);
+                currentAngle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+            }
+            
+            // Lock the current rotation and remove idle animation
+            canvas.style.transition = 'none';
+            canvas.style.transform = `rotate(${currentAngle}deg)`;
+            container.classList.remove('idle-spin');
+            container.classList.add('is-spinning');
+            if (wrapper) wrapper.classList.add('is-spinning');
+            
+            // Force reflow to ensure the "none" transition is applied
+            canvas.offsetHeight;
 
+            // Prepare for the big spin
+            canvas.style.transition = 'transform 5s cubic-bezier(0.15, 0, 0.15, 1)';
             const extraDegrees = 2000 + Math.random() * 2000; 
-            currentRotation += extraDegrees;
+            currentRotation = currentAngle + extraDegrees;
             
             canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            spinBtn.style.pointerEvents = 'none';
+            spinBtn.style.opacity = '0.5';
 
             setTimeout(() => {
                 isSpinning = false;
                 spinBtn.style.pointerEvents = 'auto';
                 spinBtn.style.opacity = '1';
+                container.classList.remove('is-spinning');
+                if (wrapper) wrapper.classList.remove('is-spinning');
                 
                 const actualDegrees = currentRotation % 360;
-                const sliceAngle = 360 / window.people.length;
+                const sliceAngle = 360 / (window.wheelParticipants.length || 1);
                 
-                // Canvas 0 angle is at 3 o'clock. Pointer is at 12 o'clock (270 deg).
-                // Formula: (PointerAngle - RotationAngle) % 360
                 const pointerAngle = 270;
                 let winningAngle = (pointerAngle - actualDegrees) % 360;
                 if (winningAngle < 0) winningAngle += 360;
                 
                 const winnerIndex = Math.floor(winningAngle / sliceAngle);
-                const winner = window.people[winnerIndex];
+                const winner = window.wheelParticipants[winnerIndex];
 
-                winnerName.textContent = winner.name;
-                resultDiv.classList.remove('hidden');
-                
+                // Show result in a POPUP modal
+                modalTitle.textContent = 'WE HAVE A WINNER!';
+                modalContent.innerHTML = `
+                    <div style="text-align: center; padding: 1.5rem 0;">
+                        <div class="winner-label" style="margin-bottom: 1rem; color: var(--accent-primary); letter-spacing: 4px; font-weight: 800;">CONGRATULATIONS</div>
+                        <div class="winner-name" style="font-size: 3.5rem; font-weight: 950; margin-bottom: 2rem; color: white; text-shadow: 0 0 30px var(--accent-glow);">${winner ? winner.name : 'Unknown'}</div>
+                        <button class="primary-btn" onclick="window.resetWheel()" style="width: 100%; padding: 1.2rem;">Spin Again</button>
+                    </div>
+                `;
+                modalSave.style.display = 'none';
+                modalCancel.style.display = 'none';
+                modalOverlay.classList.remove('hidden');
+
                 // Success effect
                 window.createSuccessCoins();
-            }, 4000);
+
+                // Resume idle spin after a delay
+                setTimeout(() => {
+                    if (!isSpinning) {
+                        canvas.style.setProperty('--current-rotation', `${currentRotation}deg`);
+                        container.classList.add('idle-spin');
+                    }
+                }, 3000);
+            }, 5000);
         };
     }
 
     window.resetWheel = () => {
-        document.getElementById('wheel-result').classList.add('hidden');
+        modalOverlay.classList.add('hidden');
         window.initWheel();
     };
 
     window.createSuccessCoins = () => {
         for(let i=0; i<20; i++) {
-            setTimeout(() => createCoin(), i * 100);
+            setTimeout(() => {
+                if (typeof createCoin === 'function') createCoin();
+            }, i * 100);
         }
     };
+});

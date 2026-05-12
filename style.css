@@ -81,8 +81,8 @@ body {
     left: 50%;
     transform: translateX(-50%);
     width: auto;
-    min-width: 800px;
-    height: 72px;
+    min-width: 1100px;
+    height: 76px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -96,18 +96,46 @@ body {
     transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.navbar.scrolled {
-    top: 12px;
-    height: 56px;
-    padding: 0 3rem;
-    background: rgba(15, 15, 25, 0.8);
-    backdrop-filter: blur(40px);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    min-width: 650px;
+.nav-links a span {
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-block;
+    max-width: 200px;
+    opacity: 1;
+    overflow: hidden;
 }
 
-.mt-4 { margin-top: 2rem; }
+/* Scrolled State Transitions */
+.navbar.scrolled {
+    top: 12px;
+    height: 64px;
+    padding: 0 2rem;
+    background: rgba(15, 15, 25, 0.95);
+    backdrop-filter: blur(40px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    min-width: 0;
+    width: auto;
+}
+
+.navbar.scrolled .logo {
+    font-size: 1.4rem;
+    margin-right: 1.5rem;
+}
+
+.navbar.scrolled .nav-links {
+    gap: 0.8rem;
+}
+
+.navbar.scrolled .nav-links a {
+    padding: 0.8rem 1rem;
+    gap: 0;
+}
+
+.navbar.scrolled .nav-links a span {
+    max-width: 0;
+    opacity: 0;
+    margin: 0;
+}
 
 .logo {
     font-size: 1.6rem;
@@ -117,7 +145,8 @@ body {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -1px;
-    transition: all 0.5s ease;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-right: 2rem;
 }
 
 .navbar.scrolled .logo {
@@ -126,7 +155,7 @@ body {
 
 .nav-links {
     display: flex;
-    gap: 1rem;
+    gap: 2.5rem;
 }
 
 .nav-links a {
@@ -2365,11 +2394,84 @@ body.travel-journal-active #coin-container {
     transform: scale(1.05);
 }
 /* --- SPIN WHEEL --- */
+body.spin-wheel-active {
+    background: #050510;
+    overflow: hidden;
+    height: 100vh;
+}
+
+body.spin-wheel-active #coin-container {
+    display: none !important;
+}
+
+body.spin-wheel-active::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 15% 70%, rgba(14, 165, 233, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 25%, rgba(236, 72, 153, 0.12) 0%, transparent 40%);
+    filter: blur(60px);
+    animation: wheelBgOrbit 25s infinite alternate ease-in-out;
+    z-index: -2;
+    pointer-events: none;
+}
+
+body.spin-wheel-active::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        conic-gradient(from 0deg at 50% 50%,
+            rgba(99, 102, 241, 0.03) 0deg,
+            transparent 30deg,
+            rgba(168, 85, 247, 0.03) 60deg,
+            transparent 90deg,
+            rgba(244, 63, 94, 0.03) 120deg,
+            transparent 150deg,
+            rgba(16, 185, 129, 0.03) 180deg,
+            transparent 210deg,
+            rgba(245, 158, 11, 0.03) 240deg,
+            transparent 270deg,
+            rgba(14, 165, 233, 0.03) 300deg,
+            transparent 330deg,
+            rgba(99, 102, 241, 0.03) 360deg
+        );
+    animation: wheelRaysSpin 40s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes wheelBgOrbit {
+    0% {
+        transform: scale(1) rotate(0deg);
+        filter: blur(60px) brightness(1);
+    }
+    50% {
+        transform: scale(1.15) rotate(3deg);
+        filter: blur(70px) brightness(1.15);
+    }
+    100% {
+        transform: scale(1.05) rotate(-2deg);
+        filter: blur(60px) brightness(1.05);
+    }
+}
+
+@keyframes wheelRaysSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 .spin-wheel-view {
     width: 92%;
     max-width: 1000px;
     margin: 120px auto 160px;
     text-align: center;
+    position: relative;
+    z-index: 1;
 }
 
 .view-subtitle {
@@ -2388,15 +2490,39 @@ body.travel-journal-active #coin-container {
 
 .wheel-pointer {
     position: absolute;
-    top: -20px;
+    top: -25px;
     left: 50%;
     transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    background: #fff;
+    width: 45px;
+    height: 45px;
+    background: white;
     clip-path: polygon(50% 100%, 0 0, 100% 0);
-    z-index: 20;
-    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+    z-index: 40;
+    filter: drop-shadow(0 0 15px var(--accent-glow));
+    transform-origin: 50% 0%;
+    transition: transform 0.1s ease;
+}
+
+.is-spinning .wheel-pointer {
+    animation: pointerWiggle 0.15s infinite;
+}
+
+@keyframes pointerWiggle {
+    0% { transform: translateX(-50%) rotate(0deg); }
+    25% { transform: translateX(-50%) rotate(-15deg); }
+    75% { transform: translateX(-50%) rotate(10deg); }
+    100% { transform: translateX(-50%) rotate(0deg); }
+}
+
+.wheel-pointer::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.4);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
 }
 
 .wheel-container {
@@ -2404,20 +2530,121 @@ body.travel-journal-active #coin-container {
     height: 100%;
     position: relative;
     border-radius: 50%;
-    border: 8px solid rgba(255, 255, 255, 0.05);
+    border: 12px solid rgba(255, 255, 255, 0.05);
     box-shadow: 
-        0 0 0 15px rgba(255, 255, 255, 0.02),
-        0 30px 100px rgba(0, 0, 0, 0.6),
-        inset 0 0 50px rgba(0, 0, 0, 0.5);
+        0 0 0 4px rgba(255, 255, 255, 0.02),
+        0 30px 100px rgba(0, 0, 0, 0.8),
+        inset 0 0 80px rgba(0, 0, 0, 0.6);
     overflow: hidden;
-    background: rgba(20, 20, 30, 0.4);
+    background: #0a0a14;
     backdrop-filter: blur(10px);
+    transition: box-shadow 0.5s ease;
+}
+
+.wheel-container.is-spinning {
+    border-color: rgba(168, 85, 247, 0.3);
+    animation: purpleWheelGlow 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes purpleWheelGlow {
+    from {
+        box-shadow: 
+            0 0 20px rgba(168, 85, 247, 0.2),
+            0 30px 100px rgba(0, 0, 0, 0.8),
+            0 0 60px rgba(168, 85, 247, 0.1);
+    }
+    to {
+        box-shadow: 
+            0 0 60px rgba(168, 85, 247, 0.6),
+            0 30px 120px rgba(0, 0, 0, 0.9),
+            0 0 120px rgba(168, 85, 247, 0.3);
+    }
 }
 
 #wheel-canvas {
     width: 100%;
     height: 100%;
-    transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
+    transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+}
+
+.wheel-container.idle-spin #wheel-canvas {
+    animation: idleRotation 60s linear infinite;
+}
+
+@keyframes idleRotation {
+    from { transform: rotate(var(--current-rotation, 0deg)); }
+    to { transform: rotate(calc(var(--current-rotation, 0deg) + 360deg)); }
+}
+
+.wheel-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.assign-wheel-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.assign-wheel-btn.guide-pulse {
+    animation: guidePulse 2s infinite;
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent-primary);
+}
+
+@keyframes guidePulse {
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.wheel-people-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.wheel-person-toggle {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.8rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wheel-person-toggle.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent-primary);
+}
+
+.toggle-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.active .toggle-dot {
+    background: var(--accent-primary);
+    border-color: white;
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .wheel-center-btn {
@@ -2425,18 +2652,19 @@ body.travel-journal-active #coin-container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    background: #fff;
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #ffffff, #e0e7ff);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 30;
+    z-index: 50;
     box-shadow: 
-        0 0 0 8px rgba(255, 255, 255, 0.1),
-        0 10px 30px rgba(0, 0, 0, 0.5);
+        0 0 0 10px rgba(255, 255, 255, 0.05),
+        0 15px 40px rgba(0, 0, 0, 0.5),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 

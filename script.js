@@ -741,55 +741,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
 
-        // Stability Check: Limit total photos per destination
-        const MAX_PHOTOS = 20;
-        const currentCount = (dest.album || []).length;
-        if (currentCount >= MAX_PHOTOS) {
-            alert(`You have reached the maximum limit of ${MAX_PHOTOS} photos for this destination. Please delete some before adding more.`);
-            return;
-        }
-
-        const remainingSlots = MAX_PHOTOS - currentCount;
-        const filesToProcess = files.slice(0, remainingSlots);
-
-        if (files.length > remainingSlots) {
-            alert(`Only ${remainingSlots} photos will be uploaded to keep the app stable.`);
-        }
+        // Cloudinary Config (Unsigned Upload)
+        const CLOUD_NAME = 'dtdhkgfic';
+        const UPLOAD_PRESET = 'tclcfwwr';
+        const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
         // Show loading state
         const uploadBtn = document.querySelector('.action-btn-pill');
         const originalBtnText = uploadBtn.innerHTML;
         uploadBtn.disabled = true;
-        uploadBtn.innerHTML = `<span class="spinner"></span> Processing...`;
+        uploadBtn.innerHTML = `<span class="spinner"></span> 0/${files.length}`;
 
         if (!dest.album) dest.album = [];
+        const currentCount = dest.album.length;
+        let uploadedCount = 0;
 
         try {
-            // Process SEQUENTIALLY to prevent memory crashes
-            for (const file of filesToProcess) {
-                const dataUrl = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.readAsDataURL(file);
+            for (const file of files) {
+                // 1. Prepare form data for Cloudinary
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', UPLOAD_PRESET);
+                formData.append('folder', `albums/${destId}`); // Organize by destination ID
+
+                // 2. Upload to Cloudinary via Fetch API
+                const response = await fetch(CLOUDINARY_URL, {
+                    method: 'POST',
+                    body: formData
                 });
+
+                if (!response.ok) throw new Error('Cloudinary upload failed');
+
+                const data = await response.json();
                 
-                try {
-                    // Aggressive compression for RTDB stability: 1000px, 0.6 quality
-                    const compressed = await compressImage(dataUrl, 1000, 0.6);
-                    dest.album.push(compressed);
-                } catch (err) {
-                    console.error('Compression error:', err);
-                }
+                // 3. Store the public Cloudinary URL in our database
+                dest.album.push(data.secure_url);
                 
-                // Partial progress update for UI feedback
-                uploadBtn.innerHTML = `<span class="spinner"></span> ${dest.album.length - currentCount}/${filesToProcess.length}`;
+                uploadedCount++;
+                uploadBtn.innerHTML = `<span class="spinner"></span> ${uploadedCount}/${files.length}`;
             }
 
             saveState();
             renderAlbum(dest);
         } catch (error) {
-            console.error('Error uploading photos:', error);
-            alert('Failed to upload some photos. Please try again.');
+            console.error('Error uploading photos to Cloudinary:', error);
+            alert('Failed to upload some photos to Cloudinary. Please check your internet and try again.');
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalBtnText;

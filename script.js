@@ -50,43 +50,50 @@ document.addEventListener('DOMContentLoaded', () => {
     window.currentPhotoIndex = 0;
 
     function saveState() {
-        // Create a deep copy to sanitize travelData before saving
-        const travelDataCopy = window.travelData.map(dest => ({
-            ...dest,
-            album: dest.album ? dest.album.filter(url => !url.startsWith('blob:')) : []
-        }));
+        // Normalize travelData: Remove heavy album data from the main state sync
+        const sanitizedTravelData = window.travelData.map(dest => {
+            const { album, ...metadata } = dest;
+            return metadata;
+        });
 
         const state = {
             people: window.people,
             items: window.items,
             cashData: window.cashData,
-            travelData: travelDataCopy,
+            travelData: sanitizedTravelData,
             wheelParticipants: window.wheelParticipants
         };
         
-        // Save to Firebase
+        // Save to Firebase (Main Metadata)
         db.ref('bekantans_data').set(state).catch(err => {
             console.error('Firebase Save Error:', err);
         });
         
-        // Save to LocalStorage for instant loading
+        // Save to LocalCache (with limited album data to save space)
         try {
-            localStorage.setItem('bekantans_cache', JSON.stringify(state));
-        } catch (e) {
-            console.warn('LocalStorage Quota Exceeded. Attempting to save lightweight cache...');
-            // Fallback: Save state without heavy albums to keep the app functional
-            try {
-                const lightTravelData = window.travelData.map(dest => ({
+            const lightState = {
+                ...state,
+                travelData: window.travelData.map(dest => ({
                     ...dest,
-                    album: [] // Remove heavy album photos from cache to save space
-                }));
-                const lightState = { ...state, travelData: lightTravelData };
-                localStorage.setItem('bekantans_cache', JSON.stringify(lightState));
-            } catch (e2) {
-                console.error('Lightweight cache also failed:', e2);
-            }
+                    album: (dest.album || []).slice(0, 50) // Cache only first 50 photos for speed
+                }))
+            };
+            localStorage.setItem('bekantans_cache', JSON.stringify(lightState));
+        } catch (e) {
+            console.warn('LocalStorage Cache failed:', e);
         }
     }
+
+    // New helper to save individual albums separately (supporting 1000+ photos)
+    window.saveAlbum = function(destId, album) {
+        if (!destId) return;
+        // Sanitize: filter out blob URLs
+        const cleanAlbum = (album || []).filter(url => !url.startsWith('blob:'));
+        
+        db.ref('albums/' + destId).set(cleanAlbum).catch(err => {
+            console.error('Album Save Error:', err);
+        });
+    };
 
     // --- Initial Cache Load ---
     const cachedData = localStorage.getItem('bekantans_cache');
@@ -552,6 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
+        // Store current ID for on-demand album loading
+        detailsView.dataset.id = id;
+
         const tabs = detailsView.querySelectorAll('.details-tab');
         const views = detailsView.querySelectorAll('.details-body > div');
         
@@ -561,13 +571,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 tab.classList.add('active');
                 views.forEach(v => v.classList.add('hidden'));
                 views[index].classList.remove('hidden');
+                
+                // If switching to Album tab, fetch album data on-demand
+                if (tab.textContent === 'Album') {
+                    window.loadAlbum(id);
+                }
             };
         });
+
+        // Initialize Itinerary
+        renderItinerary(dest);
         
         document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
         detailsView.classList.remove('hidden');
-        renderItinerary(dest);
-        renderAlbum(dest);
+    };
+
+    // Helper to load album on-demand
+    window.loadAlbum = function(destId) {
+        const albumView = document.querySelector('.album-view');
+        if (!albumView) return;
+
+        albumView.innerHTML = `
+            <div class="loading-state" style="padding: 3rem; text-align: center;">
+                <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                <p>Loading Album...</p>
+            </div>
+        `;
+
+        db.ref('albums/' + destId).once('value').then(snapshot => {
+            const albumData = snapshot.val() || [];
+            const dest = window.travelData.find(d => d.id === destId);
+            if (dest) {
+                dest.album = albumData;
+                window.renderAlbum(dest);
+            }
+        }).catch(err => {
+            console.error('Failed to load album:', err);
+            albumView.innerHTML = '<p style="text-align:center; padding:2rem;">Error loading album.</p>';
+        });
     };
 
     window.selectedPhotos = new Set();
@@ -794,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const newAlbum = dest.album.filter((_, index) => !window.selectedPhotos.has(index));
                     dest.album = newAlbum;
                     window.selectedPhotos.clear();
-                    saveState();
+                    window.saveAlbum(destId, dest.album);
                     renderAlbum(dest);
                 }
             }
@@ -884,8 +925,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Wait for all uploads to complete before persisting to Firebase
         await Promise.all(uploadPromises);
         
-        // Final save and UI cleanup
+        // Final save: Separate metadata and album storage
         saveState();
+        window.saveAlbum(destId, dest.album);
+        
         renderAlbum(dest);
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalBtnText;
@@ -1006,13 +1049,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.deletePhoto = (destId, photoIndex) => {
-        if (!confirm('Delete this photo from the album?')) return;
-        const dest = window.travelData.find(d => d.id === destId);
-        if (dest && dest.album) {
-            dest.album.splice(photoIndex, 1);
-            saveState();
-            renderAlbum(dest);
-        }
+        window.showConfirmModal(
+            'Delete Photo',
+            'Are you sure you want to delete this photo?',
+            () => {
+                const dest = window.travelData.find(d => d.id === destId);
+                if (dest && dest.album) {
+                    dest.album.splice(photoIndex, 1);
+                    window.saveAlbum(destId, dest.album);
+                    renderAlbum(dest);
+                }
+            }
+        );
     };
 
     window.downloadPhoto = (dataUrl, filename) => {
@@ -1686,11 +1734,16 @@ document.addEventListener('DOMContentLoaded', () => {
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
             
-            // Filter out any accidentally saved blob URLs
-            window.travelData = (data.travelData || []).map(dest => ({
-                ...dest,
-                album: dest.album ? dest.album.filter(url => !url.startsWith('blob:')) : []
-            }));
+            // Update travelData while preserving any locally loaded albums
+            const remoteTravelData = data.travelData || [];
+            window.travelData = remoteTravelData.map(remoteDest => {
+                const localDest = window.travelData.find(ld => ld.id === remoteDest.id);
+                // Keep the existing album in memory if it exists locally
+                return {
+                    ...remoteDest,
+                    album: localDest ? localDest.album : []
+                };
+            });
             
             window.wheelParticipants = data.wheelParticipants || [];
             

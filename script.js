@@ -46,13 +46,40 @@ document.addEventListener('DOMContentLoaded', () => {
     window.currentPhotoIndex = 0;
 
     function saveState() {
-        db.ref('bekantans_data').set({
+        const state = {
             people: window.people,
             items: window.items,
             cashData: window.cashData,
             travelData: window.travelData,
             wheelParticipants: window.wheelParticipants
-        });
+        };
+        
+        // Save to Firebase
+        db.ref('bekantans_data').set(state);
+        
+        // Save to LocalStorage for instant loading
+        localStorage.setItem('bekantans_cache', JSON.stringify(state));
+    }
+
+    // --- Initial Cache Load ---
+    const cachedData = localStorage.getItem('bekantans_cache');
+    if (cachedData) {
+        try {
+            const data = JSON.parse(cachedData);
+            window.people = data.people || [];
+            window.items = data.items || [];
+            window.cashData = data.cashData || {};
+            window.travelData = data.travelData || [];
+            window.wheelParticipants = data.wheelParticipants || [];
+            
+            // Initial render from cache
+            renderPeople();
+            renderItems();
+            renderCashFund();
+            renderTravelJournal();
+        } catch (e) {
+            console.error('Cache load failed:', e);
+        }
     }
 
     // --- Selectors ---

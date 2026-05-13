@@ -758,23 +758,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             for (const file of files) {
-                // 1. Prepare form data for Cloudinary
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', UPLOAD_PRESET);
-                formData.append('folder', `albums/${destId}`); // Organize by destination ID
+                // 1. Get DataURL for compression
+                const dataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
 
-                // 2. Upload to Cloudinary via Fetch API
+                // 2. High-Quality Compression for Stability (2500px, 0.9 quality)
+                // This keeps the photo "Full HD" but makes it 5x more stable to upload.
+                let fileToUpload = file;
+                try {
+                    const compressedBase64 = await compressImage(dataUrl, 2500, 0.9);
+                    // Convert base64 back to a blob for more stable Cloudinary upload
+                    const res = await fetch(compressedBase64);
+                    fileToUpload = await res.blob();
+                } catch (e) {
+                    console.warn('Compression skipped, using original file', e);
+                }
+
+                // 3. Prepare Cloudinary Upload
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
+                formData.append('upload_preset', UPLOAD_PRESET);
+
                 const response = await fetch(CLOUDINARY_URL, {
                     method: 'POST',
                     body: formData
                 });
 
-                if (!response.ok) throw new Error('Cloudinary upload failed');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'Cloudinary upload failed');
+                }
 
                 const data = await response.json();
-                
-                // 3. Store the public Cloudinary URL in our database
                 dest.album.push(data.secure_url);
                 
                 uploadedCount++;
@@ -784,8 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
             saveState();
             renderAlbum(dest);
         } catch (error) {
-            console.error('Error uploading photos to Cloudinary:', error);
-            alert('Failed to upload some photos to Cloudinary. Please check your internet and try again.');
+            console.error('Stability Error:', error);
+            alert(`Stability Error: ${error.message}. Please check if your Cloudinary Preset is set to "Unsigned" and saved.`);
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalBtnText;

@@ -862,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await response.json();
                 
-                // Replace temp URL with real URL
+                // Replace temp URL with real URL in the live state
                 const realIndex = startIndex + i;
                 dest.album[realIndex] = data.secure_url;
                 
@@ -872,18 +872,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 uploadedCount++;
                 uploadBtn.innerHTML = `<span class="spinner"></span> ${uploadedCount}/${files.length}`;
                 
-                // Save state and re-render for this specific success
-                saveState();
+                // Re-render UI only (don't save to Firebase yet to avoid race conditions)
                 renderAlbum(dest);
             } catch (error) {
                 console.error('Upload error:', error);
-                // On error, we might want to remove the temp item or show an error state
-                // For now, let's just leave it (it will be a broken local URL after refresh)
+                // Fallback: if upload fails, we keep the blob or could remove it. 
+                // For now, let's just leave it so the user sees it failed.
             }
         });
 
+        // Wait for all uploads to complete before persisting to Firebase
         await Promise.all(uploadPromises);
-
+        
+        // Final save and UI cleanup
+        saveState();
+        renderAlbum(dest);
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = originalBtnText;
         event.target.value = ''; // Reset input

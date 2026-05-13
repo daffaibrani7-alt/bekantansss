@@ -195,11 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const navAvatar = document.querySelector('.nav-avatar');
             if (navAvatar) navAvatar.textContent = account.user.charAt(0).toUpperCase();
 
-            showView('split');
+            showView('travel');
             
             // Re-render to ensure data is visible
-            renderPeople();
-            renderItems();
+            renderTravelJournal();
         } else {
             errorMsg.classList.remove('hidden');
             setTimeout(() => {
@@ -217,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const navAvatar = document.querySelector('.nav-avatar');
             if (navAvatar) navAvatar.textContent = loggedInUser.charAt(0).toUpperCase();
         }
+        showView('travel');
     } else {
         if (loginView) loginView.classList.remove('hidden');
         if (navbar) navbar.classList.add('hidden');

@@ -147,6 +147,7 @@ body {
     letter-spacing: -1px;
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     margin-right: 2rem;
+    cursor: pointer;
 }
 
 .navbar.scrolled .logo {

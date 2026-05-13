@@ -140,6 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const navWheel = document.getElementById('nav-wheel');
     const navLogo = document.getElementById('nav-logo');
     const spinWheelView = document.getElementById('spin-wheel-view');
+    const navbar = document.querySelector('.navbar');
+
+    // Attach Click Handlers early
+    if (navLogo) navLogo.onclick = () => showView('landing');
+    if (navSplit) navSplit.onclick = (e) => { e.preventDefault(); showView('split'); };
+    if (navCash) navCash.onclick = (e) => { e.preventDefault(); showView('cash'); };
+    if (navTravel) navTravel.onclick = (e) => { e.preventDefault(); showView('travel'); };
+    if (navWheel) navWheel.onclick = (e) => { e.preventDefault(); showView('wheel'); };
 
     const avatarsContainer = document.getElementById('people-avatars');
     const itemsList = document.getElementById('items-list');
@@ -357,6 +365,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add CSS for travel journal background if not exists
     if (!document.getElementById('travel-bg-style')) {
+        const style = document.createElement('style');
+        style.id = 'travel-bg-style';
+        style.innerHTML = `
+            body.travel-journal-active {
+                background: #000;
+                overflow-x: hidden;
+            }
+            body.travel-journal-active::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: 
+                    radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
+                filter: blur(80px);
+                animation: bgMove 20s infinite alternate ease-in-out;
+                z-index: -1;
+            }
+            @keyframes bgMove {
+                from { transform: scale(1) rotate(0deg); }
+                to { transform: scale(1.2) rotate(5deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     window.customConfirm = function(message, onConfirm, hideCancel = false) {
         modalTitle.textContent = 'Confirmation';
         modalContent.innerHTML = `<p style="padding: 1.5rem 0; font-size: 1.1rem; line-height: 1.6; opacity: 0.9; text-align: center;">${message}</p>`;
@@ -389,32 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.disabled = false;
     };
 
-    const style = document.createElement('style');
-        style.id = 'travel-bg-style';
-        style.innerHTML = `
-            body.travel-journal-active {
-                background: #000;
-                overflow-x: hidden;
-            }
-            body.travel-journal-active::before {
-                content: '';
-                position: fixed;
-                inset: 0;
-                background: 
-                    radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 50%);
-                filter: blur(80px);
-                animation: bgMove 20s infinite alternate ease-in-out;
-                z-index: -1;
-            }
-            @keyframes bgMove {
-                from { transform: scale(1) rotate(0deg); }
-                to { transform: scale(1.2) rotate(5deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
     // Scroll Handler for Navbar (uses global navbar)
     window.onscroll = () => {
         if (window.scrollY > 50) {
@@ -431,11 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    navLogo.onclick = () => showView('landing');
-    navSplit.onclick = (e) => { e.preventDefault(); showView('landing'); };
-    navCash.onclick = (e) => { e.preventDefault(); showView('cash'); };
-    navTravel.onclick = (e) => { e.preventDefault(); showView('travel'); };
-    navWheel.onclick = (e) => { e.preventDefault(); showView('wheel'); };
 
     // --- Core Functions ---
     window.renderPeople = function() {

@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const landingView = document.getElementById('landing-view');
     const mainView = document.getElementById('main-view');
     const cashView = document.getElementById('cash-fund-view');
-    const travelView = document.getElementById('travel-view');
+    const travelView = document.getElementById('travel-journal-view');
     const travelDetailsView = document.getElementById('travel-details-view');
     const splitResultsView = document.getElementById('split-results-view');
     const fullResultsGrid = document.getElementById('full-results-grid');
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label>Location</label>
                 <input type="text" id="m-dest-location" placeholder="e.g. Bali, Indonesia">
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="input-grid-responsive">
                 <div class="input-group">
                     <label>Duration</label>
                     <input type="text" id="m-dest-duration" placeholder="e.g. 0 Days (Default)">
@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label>Location</label>
                 <input type="text" id="m-dest-location" value="${dest.location}">
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="input-grid-responsive">
                 <div class="input-group">
                     <label>Duration</label>
                     <input type="text" id="m-dest-duration" value="${dest.duration}">
@@ -481,6 +481,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.selectedPhotos = new Set();
+    let touchTimer = null;
+    let isDragSelecting = false;
+    let initialTouchX = 0;
+    let initialTouchY = 0;
 
     window.renderAlbum = function(dest) {
         const albumView = document.querySelector('.album-view');
@@ -510,11 +514,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="toolbar-actions">
                             <button class="btn-toolbar btn-toolbar-download" onclick="window.bulkDownload(${dest.id})">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                Download
+                                <span class="toolbar-label">Download</span>
                             </button>
                             <button class="btn-toolbar btn-toolbar-delete" onclick="window.bulkDelete(${dest.id})">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                Delete
+                                <span class="toolbar-label">Delete</span>
                             </button>
                             <button class="btn-toolbar btn-toolbar-cancel" onclick="window.clearSelection(${dest.id})">Cancel</button>
                         </div>
@@ -535,14 +539,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            html += '<div class="album-grid">';
+            html += '<div class="album-grid" id="photo-album-grid">';
             photos.forEach((photo, index) => {
                 const isSelected = window.selectedPhotos.has(index);
                 html += `
-                    <div class="album-item ${isSelected ? 'selected' : ''}">
+                    <div class="album-item ${isSelected ? 'selected' : ''}" 
+                         data-index="${index}"
+                         ontouchstart="window.handlePhotoTouchStart(event, ${dest.id}, ${index})"
+                         ontouchmove="window.handlePhotoTouchMove(event, ${dest.id})"
+                         ontouchend="window.handlePhotoTouchEnd(event, ${dest.id})">
                         <div class="photo-checkbox" onclick="event.stopPropagation(); window.toggleSelection(${dest.id}, ${index})"></div>
-                        <img src="${photo}" alt="Trip Photo" onclick="window.openFullscreen(${dest.id}, ${index})">
-                        <div class="photo-overlay" onclick="window.openFullscreen(${dest.id}, ${index})">
+                        <img src="${photo}" alt="Trip Photo" onclick="if(!window.isLongPressing) window.openFullscreen(${dest.id}, ${index})">
+                        <div class="photo-overlay" onclick="if(!window.isLongPressing) window.openFullscreen(${dest.id}, ${index})">
                             <button class="photo-btn" onclick="event.stopPropagation(); window.downloadPhoto('${photo}', 'trip-photo-${index}.png')" title="Download">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </button>
@@ -558,13 +566,68 @@ document.addEventListener('DOMContentLoaded', () => {
         albumView.innerHTML = html;
     };
 
+    window.isLongPressing = false;
+
+    window.handlePhotoTouchStart = function(e, destId, index) {
+        if (window.innerWidth > 900) { // Only mobile (simulated or real)
+            initialTouchX = e.touches[0].clientX;
+            initialTouchY = e.touches[0].clientY;
+            window.isLongPressing = false;
+            isDragSelecting = false;
+
+            touchTimer = setTimeout(() => {
+                window.isLongPressing = true;
+                isDragSelecting = true;
+                if (!window.selectedPhotos.has(index)) {
+                    window.toggleSelection(destId, index);
+                }
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+        }
+    };
+
+    window.handlePhotoTouchMove = function(e, destId) {
+        if (!touchTimer && !isDragSelecting) return;
+
+        const touchX = e.touches[0].clientX;
+        const touchY = e.touches[0].clientY;
+
+        if (!isDragSelecting) {
+            const dist = Math.sqrt(Math.pow(touchX - initialTouchX, 2) + Math.pow(touchY - initialTouchY, 2));
+            if (dist > 10) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+            }
+            return;
+        }
+
+        e.preventDefault();
+        const element = document.elementFromPoint(touchX, touchY);
+        const item = element?.closest('.album-item');
+        
+        if (item) {
+            const index = parseInt(item.dataset.index);
+            if (!window.selectedPhotos.has(index)) {
+                window.toggleSelection(destId, index);
+            }
+        }
+    };
+
+    window.handlePhotoTouchEnd = function() {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+        isDragSelecting = false;
+        setTimeout(() => { window.isLongPressing = false; }, 50);
+    };
+
     window.toggleSelection = (destId, index) => {
+        const dest = window.travelData.find(d => d.id === destId);
+        if (!dest) return;
         if (window.selectedPhotos.has(index)) {
             window.selectedPhotos.delete(index);
         } else {
             window.selectedPhotos.add(index);
         }
-        const dest = window.travelData.find(d => d.id === destId);
         renderAlbum(dest);
     };
 
@@ -574,17 +637,65 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAlbum(dest);
     };
 
+    window.showConfirmModal = function(title, message, onConfirm) {
+        modalTitle.textContent = title;
+        modalContent.innerHTML = `
+            <div class="modal-content-premium">
+                <p>${message}</p>
+                <div class="modal-actions-premium">
+                    <button class="btn-modal btn-modal-cancel" id="modal-confirm-cancel">Cancel</button>
+                    <button class="btn-modal btn-modal-confirm" id="modal-confirm-ok">OK</button>
+                </div>
+            </div>
+        `;
+        modalOverlay.classList.remove('hidden');
+        
+        const cancelBtn = document.getElementById('modal-confirm-cancel');
+        const okBtn = document.getElementById('modal-confirm-ok');
+        
+        const close = () => {
+            modalOverlay.classList.add('hidden');
+            cancelBtn.removeEventListener('click', close);
+            okBtn.removeEventListener('click', confirmAction);
+        };
+        
+        const confirmAction = () => {
+            onConfirm();
+            close();
+        };
+        
+        cancelBtn.addEventListener('click', close);
+        okBtn.addEventListener('click', confirmAction);
+    };
+
+    // Reset Ledger with custom modal
+    window.resetLedger = () => {
+        window.showConfirmModal(
+            'Reset Ledger',
+            'Are you sure you want to reset the entire cash ledger? This will clear all recorded payments across all months.',
+            () => {
+                window.cashData = {};
+                saveState();
+                renderCashFund();
+            }
+        );
+    };
+
     window.bulkDelete = (destId) => {
-        if (!confirm(`Delete ${window.selectedPhotos.size} selected photos?`)) return;
-        const dest = window.travelData.find(d => d.id === destId);
-        if (dest && dest.album) {
-            // Filter out selected indices
-            const newAlbum = dest.album.filter((_, index) => !window.selectedPhotos.has(index));
-            dest.album = newAlbum;
-            window.selectedPhotos.clear();
-            saveState();
-            renderAlbum(dest);
-        }
+        window.showConfirmModal(
+            'Delete Photos',
+            `Are you sure you want to delete ${window.selectedPhotos.size} selected photos? This action cannot be undone.`,
+            () => {
+                const dest = window.travelData.find(d => d.id === destId);
+                if (dest && dest.album) {
+                    const newAlbum = dest.album.filter((_, index) => !window.selectedPhotos.has(index));
+                    dest.album = newAlbum;
+                    window.selectedPhotos.clear();
+                    saveState();
+                    renderAlbum(dest);
+                }
+            }
+        );
     };
 
     window.bulkDownload = (destId) => {
@@ -596,43 +707,107 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.handleAlbumUpload = (event, destId) => {
+    window.handleAlbumUpload = async (event, destId) => {
         const dest = window.travelData.find(d => d.id === destId);
         if (!dest) return;
         
         const files = event.target.files;
         if (!files.length) return;
 
+        // Show loading state in the button
+        const uploadBtn = document.querySelector('.action-btn-pill');
+        const originalBtnText = uploadBtn.innerHTML;
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = `<span class="spinner"></span> Processing...`;
+
         if (!dest.album) dest.album = [];
 
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                dest.album.push(e.target.result);
-                saveState();
-                renderAlbum(dest);
-            };
-            reader.readAsDataURL(file);
-        });
+        const processFile = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const compressed = await compressImage(e.target.result, 1200, 0.7);
+                        resolve(compressed);
+                    } catch (err) {
+                        console.error('Compression failed:', err);
+                        resolve(e.target.result); // Fallback to original if compression fails
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        try {
+            const results = await Promise.all(Array.from(files).map(file => processFile(file)));
+            dest.album.push(...results);
+            saveState();
+            renderAlbum(dest);
+        } catch (error) {
+            console.error('Error uploading photos:', error);
+            alert('Failed to upload some photos. Please try again.');
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = originalBtnText;
+        }
     };
 
+    async function compressImage(dataUrl, maxWidth, quality) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = dataUrl;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxWidth) {
+                    if (width > height) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    } else {
+                        width *= maxWidth / height;
+                        height = maxWidth;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+        });
+    }
+
     window.openFullscreen = (destId, index) => {
-        console.log('Opening fullscreen:', destId, index);
         const dest = window.travelData.find(d => String(d.id) === String(destId));
-        if (!dest || !dest.album) {
-            console.error('Destination or album not found:', destId);
-            return;
-        }
+        if (!dest || !dest.album) return;
 
         window.currentAlbumDestId = destId;
         window.currentPhotoIndex = index;
 
         const overlay = document.getElementById('lightbox-overlay');
         const img = document.getElementById('lightbox-img');
+        const indexDisplay = document.getElementById('lightbox-index');
         const downloadBtn = document.getElementById('lightbox-download');
+        const deleteBtn = document.getElementById('lightbox-delete');
 
+        // Update content
         img.src = dest.album[index];
+        if (indexDisplay) {
+            indexDisplay.textContent = `${index + 1} / ${dest.album.length}`;
+        }
+
+        // Wire actions
         downloadBtn.onclick = () => window.downloadPhoto(dest.album[index], `trip-photo-${index}.png`);
+        if (deleteBtn) {
+            deleteBtn.onclick = () => {
+                window.deletePhoto(destId, index);
+                window.closeFullscreen();
+            };
+        }
 
         overlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -661,6 +836,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'ArrowLeft') window.navigateFullscreen(-1);
         if (e.key === 'ArrowRight') window.navigateFullscreen(1);
     });
+
+    // Touch Swipe Support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    const lightboxOverlay = document.getElementById('lightbox-overlay');
+    if (lightboxOverlay) {
+        lightboxOverlay.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        lightboxOverlay.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+    }
+
+    function handleSwipe() {
+        const threshold = 50;
+        if (touchEndX < touchStartX - threshold) {
+            // Swiped Left -> Next
+            window.navigateFullscreen(1);
+        }
+        if (touchEndX > touchStartX + threshold) {
+            // Swiped Right -> Prev
+            window.navigateFullscreen(-1);
+        }
+    }
 
     window.deletePhoto = (destId, photoIndex) => {
         if (!confirm('Delete this photo from the album?')) return;
@@ -902,12 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentTarget = window.cashData[monthKey].target;
         const targetInfo = document.getElementById('cash-target-info');
         if (targetInfo) {
-            targetInfo.innerHTML = `
-                ${formatRupiah(currentTarget)}
-                <div class="edit-icon" title="Change Target">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                </div>
-            `;
+            targetInfo.innerHTML = formatRupiah(currentTarget);
             targetInfo.style.cursor = 'pointer';
             targetInfo.onclick = () => window.changeTarget(monthKey);
         }

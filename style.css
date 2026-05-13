@@ -3024,21 +3024,6 @@ body.travel-journal-active #coin-container {
     letter-spacing: 1px;
 }
 
-.selection-toolbar {
-    position: absolute;
-    inset: 0;
-    background: rgba(13, 13, 18, 0.95);
-    backdrop-filter: blur(25px);
-    border-radius: 28px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1.8rem;
-    z-index: 30;
-    border: 1px solid var(--accent-primary);
-    box-shadow: 0 15px 50px rgba(99, 102, 241, 0.3);
-    animation: toolbarIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
 
 @keyframes toolbarIn {
     from { opacity: 0; transform: translateY(-15px) scale(0.95); }
@@ -3750,14 +3735,28 @@ body.spin-wheel-active::after {
 
 /* --- ALBUM SELECTION TOOLBAR & MODAL --- */
 .selection-toolbar {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    padding: 0.8rem 1.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
+    padding: 1.2rem 2.2rem;
+    background: rgba(15, 15, 25, 0.8);
+    backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 100px;
+    z-index: 9999;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    width: max-content;
+    max-width: 90%;
+    animation: toolbarFloatIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes toolbarFloatIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .toolbar-label {

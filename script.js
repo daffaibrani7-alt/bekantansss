@@ -50,15 +50,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.currentPhotoIndex = 0;
 
     function saveState() {
+        // Create a deep copy to sanitize travelData before saving
+        const travelDataCopy = window.travelData.map(dest => ({
+            ...dest,
+            album: dest.album ? dest.album.filter(url => !url.startsWith('blob:')) : []
+        }));
+
         const state = {
             people: window.people,
             items: window.items,
             cashData: window.cashData,
-            travelData: window.travelData,
+            travelData: travelDataCopy,
             wheelParticipants: window.wheelParticipants
         };
         
-        // Save to Firebase (No 5MB limit here, but RTDB has its own limits)
+        // Save to Firebase
         db.ref('bekantans_data').set(state).catch(err => {
             console.error('Firebase Save Error:', err);
         });
@@ -94,7 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
             ];
             window.cashData = data.cashData || {};
-            window.travelData = data.travelData || [];
+            
+            // Clean up travelData from cache (remove blob URLs)
+            window.travelData = (data.travelData || []).map(dest => ({
+                ...dest,
+                album: dest.album ? dest.album.filter(url => !url.startsWith('blob:')) : []
+            }));
+            
             window.wheelParticipants = data.wheelParticipants || [];
             
             // Initial render from cache
@@ -253,6 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             modalCancel.style.display = 'block';
         }
+        
+        const modalActions = document.querySelector('.modal-actions');
+        if (modalActions) modalActions.style.display = 'flex';
         
         currentModalAction = 'confirm';
         window.confirmCallback = onConfirm;
@@ -568,6 +583,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const photos = dest.album || [];
         const isAnySelected = window.selectedPhotos.size > 0;
         
+        // Update Global Selection Toolbar
+        const globalToolbar = document.getElementById('global-selection-toolbar');
+        if (globalToolbar) {
+            if (isAnySelected) {
+                globalToolbar.classList.remove('hidden');
+                document.getElementById('selection-count-pill').textContent = window.selectedPhotos.size;
+                
+                const actionsContainer = document.getElementById('selection-toolbar-actions');
+                actionsContainer.innerHTML = `
+                    <button class="btn-toolbar btn-toolbar-download" onclick="window.bulkDownload(${dest.id})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span class="toolbar-label">Download</span>
+                    </button>
+                    <button class="btn-toolbar btn-toolbar-delete" onclick="window.bulkDelete(${dest.id})">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <span class="toolbar-label">Delete</span>
+                    </button>
+                `;
+                
+                document.getElementById('selection-cancel-btn').onclick = () => window.clearSelection(dest.id);
+            } else {
+                globalToolbar.classList.add('hidden');
+            }
+        }
+
         let html = `
             <div class="album-header">
                 <div class="photo-count-badge">
@@ -580,26 +620,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 
-                ${isAnySelected ? `
-                    <div class="selection-toolbar">
-                        <div class="selection-info">
-                            <div class="selection-count-pill">${window.selectedPhotos.size}</div>
-                            <div class="selection-text">Selected</div>
-                        </div>
-                        <div class="toolbar-actions">
-                            <button class="btn-toolbar btn-toolbar-download" onclick="window.bulkDownload(${dest.id})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                <span class="toolbar-label">Download</span>
-                            </button>
-                            <button class="btn-toolbar btn-toolbar-delete" onclick="window.bulkDelete(${dest.id})">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                <span class="toolbar-label">Delete</span>
-                            </button>
-                            <button class="btn-toolbar btn-toolbar-cancel" onclick="window.clearSelection(${dest.id})">Cancel</button>
-                        </div>
-                    </div>
-                ` : ''}
-
                 <input type="file" id="album-upload-input" hidden accept="image/*" multiple onchange="window.handleAlbumUpload(event, ${dest.id})">
                 <button class="action-btn-pill" onclick="document.getElementById('album-upload-input').click()">+ Upload Photos</button>
             </div>
@@ -737,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const okBtn = document.getElementById('modal-confirm-ok');
         
         const close = () => {
-            modalOverlay.classList.add('hidden');
+            window.closeModal();
             cancelBtn.removeEventListener('click', close);
             okBtn.removeEventListener('click', confirmAction);
         };
@@ -1662,7 +1682,13 @@ document.addEventListener('DOMContentLoaded', () => {
             window.people = (data.people && data.people.length > 0) ? data.people : window.people;
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
-            window.travelData = data.travelData || [];
+            
+            // Filter out any accidentally saved blob URLs
+            window.travelData = (data.travelData || []).map(dest => ({
+                ...dest,
+                album: dest.album ? dest.album.filter(url => !url.startsWith('blob:')) : []
+            }));
+            
             window.wheelParticipants = data.wheelParticipants || [];
             
             lastDataString = currentDataString;

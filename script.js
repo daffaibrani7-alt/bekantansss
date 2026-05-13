@@ -126,29 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Selectors ---
-    const landingView = document.getElementById('landing-view');
-    const mainView = document.getElementById('main-view');
-    const cashView = document.getElementById('cash-fund-view');
-    const travelView = document.getElementById('travel-journal-view');
-    const travelDetailsView = document.getElementById('travel-details-view');
-    const splitResultsView = document.getElementById('split-results-view');
-    const fullResultsGrid = document.getElementById('full-results-grid');
-    const navSplit = document.getElementById('nav-split');
-    const navCash = document.getElementById('nav-cash');
-    const navTravel = document.getElementById('nav-travel');
-    const navWheel = document.getElementById('nav-wheel');
-    const navLogo = document.getElementById('nav-logo');
-    const spinWheelView = document.getElementById('spin-wheel-view');
-    const navbar = document.querySelector('.navbar');
-
-    // Attach Click Handlers early
-    if (navLogo) navLogo.onclick = () => showView('landing');
-    if (navSplit) navSplit.onclick = (e) => { e.preventDefault(); showView('split'); };
-    if (navCash) navCash.onclick = (e) => { e.preventDefault(); showView('cash'); };
-    if (navTravel) navTravel.onclick = (e) => { e.preventDefault(); showView('travel'); };
-    if (navWheel) navWheel.onclick = (e) => { e.preventDefault(); showView('wheel'); };
-
     const avatarsContainer = document.getElementById('people-avatars');
     const itemsList = document.getElementById('items-list');
     const individualResults = document.getElementById('individual-results');
@@ -165,9 +142,78 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCancel = document.getElementById('modal-cancel');
     const modalSave = document.getElementById('modal-save');
 
+    const landingView = document.getElementById('landing-view');
+    const mainView = document.getElementById('main-view');
+    const cashView = document.getElementById('cash-fund-view');
+    const travelView = document.getElementById('travel-journal-view');
+    const travelDetailsView = document.getElementById('travel-details-view');
+    const splitResultsView = document.getElementById('split-results-view');
+    const fullResultsGrid = document.getElementById('full-results-grid');
+    const navSplit = document.getElementById('nav-split');
+    const navCash = document.getElementById('nav-cash');
+    const navTravel = document.getElementById('nav-travel');
+    const navWheel = document.getElementById('nav-wheel');
+    const navLogo = document.getElementById('nav-logo');
+    const spinWheelView = document.getElementById('spin-wheel-view');
     const fileInput = document.getElementById('bill-image');
     const coinContainer = document.getElementById('coin-container');
     const loginView = document.getElementById('login-view');
+    const navbar = document.querySelector('.navbar');
+
+    // --- Navigation & Core Helpers ---
+    window.showView = function(viewName) {
+        const AUTH_KEY = 'bekantans_auth';
+        // If not logged in, force login view
+        if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
+            if (loginView) loginView.classList.remove('hidden');
+            if (navbar) navbar.classList.add('hidden');
+            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+            return;
+        }
+
+        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+        [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
+        document.body.classList.remove('cash-fund-active');
+        document.body.classList.remove('travel-journal-active');
+        document.body.classList.remove('spin-wheel-active');
+
+        if (viewName === 'split') {
+            mainView.classList.remove('hidden');
+            navSplit.classList.add('active');
+            if (typeof renderPeople === 'function') renderPeople();
+            if (typeof renderItems === 'function') renderItems();
+        } else if (viewName === 'cash') {
+            cashView.classList.remove('hidden');
+            navCash.classList.add('active');
+            document.body.classList.add('cash-fund-active');
+            if (typeof renderCashFund === 'function') renderCashFund();
+        } else if (viewName === 'travel') {
+            travelView.classList.remove('hidden');
+            navTravel.classList.add('active');
+            document.body.classList.add('travel-journal-active');
+            if (typeof renderTravelJournal === 'function') renderTravelJournal();
+            if (typeof initTravelFilter === 'function') initTravelFilter();
+        } else if (viewName === 'wheel') {
+            spinWheelView.classList.remove('hidden');
+            navWheel.classList.add('active');
+            document.body.classList.add('spin-wheel-active');
+            if (window.initWheel) window.initWheel();
+        } else if (viewName === 'landing') {
+            landingView.classList.remove('hidden');
+            navSplit.classList.add('active');
+        } else if (viewName === 'split-results') {
+            splitResultsView.classList.remove('hidden');
+            navSplit.classList.add('active');
+        }
+    }
+
+    // Attach Click Handlers early (AFTER showView is defined)
+    if (navLogo) navLogo.onclick = () => window.showView('landing');
+    if (navSplit) navSplit.onclick = (e) => { e.preventDefault(); window.showView('split'); };
+    if (navCash) navCash.onclick = (e) => { e.preventDefault(); window.showView('cash'); };
+    if (navTravel) navTravel.onclick = (e) => { e.preventDefault(); window.showView('travel'); };
+    if (navWheel) navWheel.onclick = (e) => { e.preventDefault(); window.showView('wheel'); };
+
 
     // --- Authentication ---
     const AUTH_KEY = 'bekantans_auth';
@@ -315,52 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString('en-GB', options);
     }
 
-    // --- Navigation ---
-    window.showView = function(viewName) {
-        const AUTH_KEY = 'bekantans_auth';
-        // If not logged in, force login view
-        if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
-            if (loginView) loginView.classList.remove('hidden');
-            if (navbar) navbar.classList.add('hidden');
-            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
-            return;
-        }
-
-        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
-        [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
-        document.body.classList.remove('cash-fund-active');
-        document.body.classList.remove('travel-journal-active');
-        document.body.classList.remove('spin-wheel-active');
-
-        if (viewName === 'split') {
-            mainView.classList.remove('hidden');
-            navSplit.classList.add('active');
-            renderPeople();
-            renderItems();
-        } else if (viewName === 'cash') {
-            cashView.classList.remove('hidden');
-            navCash.classList.add('active');
-            document.body.classList.add('cash-fund-active');
-            renderCashFund();
-        } else if (viewName === 'travel') {
-            travelView.classList.remove('hidden');
-            navTravel.classList.add('active');
-            document.body.classList.add('travel-journal-active');
-            renderTravelJournal();
-            initTravelFilter();
-        } else if (viewName === 'wheel') {
-            spinWheelView.classList.remove('hidden');
-            navWheel.classList.add('active');
-            document.body.classList.add('spin-wheel-active');
-            window.initWheel();
-        } else if (viewName === 'landing') {
-            landingView.classList.remove('hidden');
-            navSplit.classList.add('active');
-        } else if (viewName === 'split-results') {
-            splitResultsView.classList.remove('hidden');
-            navSplit.classList.add('active');
-        }
-    }
 
     // Add CSS for travel journal background if not exists
     if (!document.getElementById('travel-bg-style')) {

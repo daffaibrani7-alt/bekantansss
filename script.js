@@ -167,11 +167,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
             if (loginView) loginView.classList.remove('hidden');
             if (navbar) navbar.classList.add('hidden');
-            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, document.getElementById('profile-view')].forEach(v => v?.classList.add('hidden'));
             return;
         }
 
-        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+        const profileView = document.getElementById('profile-view');
+        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, profileView].forEach(v => v?.classList.add('hidden'));
         [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
         document.body.classList.remove('travel-journal-active');
@@ -204,6 +205,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (viewName === 'split-results') {
             splitResultsView.classList.remove('hidden');
             navSplit.classList.add('active');
+        } else if (viewName === 'profile') {
+            if (profileView) {
+                profileView.classList.remove('hidden');
+                const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
+                document.getElementById('profile-username').textContent = currentUser;
+                const largeAvatar = profileView.querySelector('.large-avatar');
+                if (largeAvatar) largeAvatar.textContent = currentUser.charAt(0).toUpperCase();
+            }
         }
     }
 
@@ -284,21 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.showProfile = () => {
-        const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
-        window.showConfirmModal(
-            'User Profile',
-            `
-            <div style="text-align: center; padding: 1rem 0;">
-                <div class="nav-avatar" style="width: 80px; height: 80px; margin: 0 auto 1.5rem; font-size: 2rem;">${currentUser.charAt(0).toUpperCase()}</div>
-                <h3 style="color: white; margin-bottom: 0.5rem;">${currentUser}</h3>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Member of Bekantans Squad</p>
-                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.85rem; color: var(--accent-primary);">
-                    Active Session: Authorized
-                </div>
-            </div>
-            `,
-            () => window.closeModal()
-        );
+        showView('profile');
     };
 
     let currentDate = new Date();

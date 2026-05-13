@@ -4422,5 +4422,101 @@ body.spin-wheel-active::after {
     .nav-logout-btn {
         width: 32px;
         height: 32px;
-    }
+    }.profile-view {
+    padding-top: 120px;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+}
+
+.profile-card {
+    width: 92%;
+    max-width: 500px;
+    padding: 3rem;
+    text-align: center;
+}
+
+.profile-header {
+    margin-bottom: 3rem;
+}
+
+.large-avatar {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 1.5rem;
+    font-size: 2.5rem;
+    background: var(--accent-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
+}
+
+.profile-header h2 {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.profile-badge {
+    color: var(--accent-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    text-align: left;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-item label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.info-item span {
+    color: white;
+    font-weight: 600;
+}
+
+.profile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.secondary-btn {
+    padding: 1.2rem;
+    border-radius: 16px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.secondary-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+}
 }

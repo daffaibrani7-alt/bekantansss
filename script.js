@@ -168,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('bill-image');
     const coinContainer = document.getElementById('coin-container');
     const loginView = document.getElementById('login-view');
-    const navbar = document.querySelector('.navbar');
 
     // --- Authentication ---
     const AUTH_KEY = 'bekantans_auth';

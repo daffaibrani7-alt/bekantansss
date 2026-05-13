@@ -164,18 +164,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Authentication ---
     const AUTH_KEY = 'bekantans_auth';
-    const VALID_USER = 'bekantans';
-    const VALID_PASS = 'trip2026';
+    const USER_KEY = 'bekantans_user';
+    const VALID_ACCOUNTS = [
+        { user: 'Daffa', pass: 'Daffa' },
+        { user: 'Okta', pass: 'Okta' },
+        { user: 'Desintha', pass: 'Desintha' },
+        { user: 'Rama', pass: 'Rama' },
+        { user: 'Yusuf', pass: 'Yusuf' },
+        { user: 'Krisna', pass: 'Krisna' },
+        { user: 'Pahotan', pass: 'Pahotan' },
+        { user: 'bekantans', pass: 'trip2026' } // Keep the admin one for backup
+    ];
 
     window.handleLogin = () => {
-        const user = document.getElementById('login-username').value;
-        const pass = document.getElementById('login-password').value;
+        const userInput = document.getElementById('login-username').value;
+        const passInput = document.getElementById('login-password').value;
         const errorMsg = document.getElementById('login-error');
 
-        if (user === VALID_USER && pass === VALID_PASS) {
+        const account = VALID_ACCOUNTS.find(acc => 
+            acc.user.toLowerCase() === userInput.toLowerCase() && acc.pass === passInput
+        );
+
+        if (account) {
             sessionStorage.setItem(AUTH_KEY, 'true');
+            sessionStorage.setItem(USER_KEY, account.user);
             loginView.classList.add('hidden');
             navbar.classList.remove('hidden');
+            
+            // Update Avatar Initial
+            const navAvatar = document.querySelector('.nav-avatar');
+            if (navAvatar) navAvatar.textContent = account.user.charAt(0).toUpperCase();
+
             showView('split');
             
             // Re-render to ensure data is visible
@@ -190,9 +209,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Check auth on load
+    const loggedInUser = sessionStorage.getItem(USER_KEY);
     if (sessionStorage.getItem(AUTH_KEY) === 'true') {
         if (loginView) loginView.classList.add('hidden');
         if (navbar) navbar.classList.remove('hidden');
+        if (loggedInUser) {
+            const navAvatar = document.querySelector('.nav-avatar');
+            if (navAvatar) navAvatar.textContent = loggedInUser.charAt(0).toUpperCase();
+        }
     } else {
         if (loginView) loginView.classList.remove('hidden');
         if (navbar) navbar.classList.add('hidden');
@@ -202,17 +226,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.handleLogout = () => {
         sessionStorage.removeItem(AUTH_KEY);
+        sessionStorage.removeItem(USER_KEY);
         window.location.reload();
     };
 
     window.showProfile = () => {
+        const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
         window.showConfirmModal(
-            'Admin Profile',
+            'User Profile',
             `
             <div style="text-align: center; padding: 1rem 0;">
-                <div class="nav-avatar" style="width: 80px; height: 80px; margin: 0 auto 1.5rem; font-size: 2rem;">B</div>
-                <h3 style="color: white; margin-bottom: 0.5rem;">Bekantans Admin</h3>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Sharing the joy of travel since 2024</p>
+                <div class="nav-avatar" style="width: 80px; height: 80px; margin: 0 auto 1.5rem; font-size: 2rem;">${currentUser.charAt(0).toUpperCase()}</div>
+                <h3 style="color: white; margin-bottom: 0.5rem;">${currentUser}</h3>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Member of Bekantans Squad</p>
                 <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.85rem; color: var(--accent-primary);">
                     Active Session: Authorized
                 </div>

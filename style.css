@@ -688,7 +688,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .action-btn-icon {
@@ -1008,14 +1010,17 @@ input:focus {
         border-color: rgba(99, 102, 241, 0.5);
         box-shadow: 0 0 50px rgba(99, 102, 241, 0.2);
     }
+
     33% {
         border-color: rgba(168, 85, 247, 0.5);
         box-shadow: 0 0 70px rgba(168, 85, 247, 0.3);
     }
+
     66% {
         border-color: rgba(244, 63, 94, 0.5);
         box-shadow: 0 0 50px rgba(244, 63, 94, 0.2);
     }
+
     100% {
         border-color: rgba(52, 211, 153, 0.5);
         box-shadow: 0 0 70px rgba(52, 211, 153, 0.3);
@@ -1086,6 +1091,7 @@ input:focus {
 }
 
 @keyframes loader-hop {
+
     0%,
     100% {
         transform: translateY(0) scale(1);
@@ -1300,8 +1306,13 @@ input:focus {
 }
 
 @keyframes blobFloat {
-    from { transform: translate(0, 0) scale(1); }
-    to { transform: translate(50px, 30px) scale(1.2); }
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+
+    to {
+        transform: translate(50px, 30px) scale(1.2);
+    }
 }
 
 .view-title-group {
@@ -1568,8 +1579,13 @@ input:focus {
     letter-spacing: 0.5px;
 }
 
-.cash-person-card.paid .status { color: #10b981; }
-.cash-person-card.unpaid .status { color: #f59e0b; }
+.cash-person-card.paid .status {
+    color: #10b981;
+}
+
+.cash-person-card.unpaid .status {
+    color: #f59e0b;
+}
 
 .pay-toggle {
     padding: 0.6rem 1.2rem;
@@ -1609,6 +1625,7 @@ input:focus {
     .cash-dashboard {
         grid-template-columns: 1fr;
     }
+
     .cash-stats-grid {
         grid-template-columns: 1fr;
     }
@@ -1670,8 +1687,13 @@ input:focus {
     letter-spacing: 1.5px;
 }
 
-.paid .status { color: #10b981; }
-.unpaid .status { color: #f43f5e; }
+.paid .status {
+    color: #10b981;
+}
+
+.unpaid .status {
+    color: #f43f5e;
+}
 
 .pay-toggle {
     padding: 0.8rem 1.6rem;
@@ -1683,19 +1705,48 @@ input:focus {
     transition: all 0.3s ease;
 }
 
-.btn-pay { background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid rgba(255, 255, 255, 0.1); }
-.btn-pay:hover { background: rgba(255, 255, 255, 0.1); }
-.btn-unpay { background: #10b981; color: white; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); }
+.btn-pay {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-pay:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-unpay {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+}
 
 @media (max-width: 900px) {
-    .view-header-row { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-    .cash-stats { grid-template-columns: 1fr; }
-    .stat-card { min-height: 150px; }
+    .view-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+
+    .cash-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        min-height: 150px;
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* --- TRAVEL JOURNAL PREMIUM UI --- */
@@ -1734,7 +1785,8 @@ body.travel-journal-active #coin-container {
     display: flex;
     flex-direction: column;
     min-height: 480px;
-    padding: 0 !important; /* Remove glass-card padding to let image be flush */
+    padding: 0 !important;
+    /* Remove glass-card padding to let image be flush */
     background: rgba(15, 15, 25, 0.4);
 }
 
@@ -1799,7 +1851,8 @@ body.travel-journal-active #coin-container {
     gap: 1rem;
 }
 
-.dest-location, .dest-duration {
+.dest-location,
+.dest-duration {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1943,8 +1996,13 @@ body.travel-journal-active #coin-container {
 }
 
 @keyframes heroImageZoom {
-    from { transform: scale(1); }
-    to { transform: scale(1.02); }
+    from {
+        transform: scale(1);
+    }
+
+    to {
+        transform: scale(1.02);
+    }
 }
 
 /* We apply the animation to a pseudo-element so it doesn't zoom the content */
@@ -1963,10 +2021,10 @@ body.travel-journal-active #coin-container {
 .details-hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, 
-        rgba(0,0,0,0.1) 0%, 
-        rgba(0,0,0,0.4) 40%, 
-        rgba(0,0,0,0.9) 100%);
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.1) 0%,
+            rgba(0, 0, 0, 0.4) 40%,
+            rgba(0, 0, 0, 0.9) 100%);
 }
 
 .back-btn {
@@ -2018,6 +2076,7 @@ body.travel-journal-active #coin-container {
         opacity: 0;
         transform: translateY(40px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -2111,8 +2170,13 @@ body.travel-journal-active #coin-container {
 }
 
 @keyframes badgeBreath {
-    from { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-    to { box-shadow: 0 20px 80px rgba(99, 102, 241, 0.3); }
+    from {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    to {
+        box-shadow: 0 20px 80px rgba(99, 102, 241, 0.3);
+    }
 }
 
 .details-expense-badge:hover {
@@ -2223,6 +2287,7 @@ body.travel-journal-active #coin-container {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
 }
+
 @media (max-width: 600px) {
     .destination-grid {
         grid-template-columns: 1fr;
@@ -2362,7 +2427,7 @@ body.travel-journal-active #coin-container {
     transform: translateY(-5px) scale(1.02);
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .stat-icon-box {
@@ -2419,7 +2484,7 @@ body.travel-journal-active #coin-container {
     width: 200%;
     height: 200%;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
     transition: all 0.5s ease;
 }
 
@@ -2441,36 +2506,36 @@ body.travel-journal-active #coin-container {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .stat-card-premium {
         padding: 1.5rem;
     }
 }
 
-    .view-actions {
-        width: auto;
-        align-self: center;
-        display: flex;
-        justify-content: center;
-    }
+.view-actions {
+    width: auto;
+    align-self: center;
+    display: flex;
+    justify-content: center;
+}
 
-    .view-actions .primary-btn {
-        width: auto;
-        min-width: 200px;
-        justify-content: center;
-    }
+.view-actions .primary-btn {
+    width: auto;
+    min-width: 200px;
+    justify-content: center;
+}
 
-    .filter-row-centered {
-        margin-bottom: 2.5rem;
-        display: flex;
-        justify-content: center;
-    }
+.filter-row-centered {
+    margin-bottom: 2.5rem;
+    display: flex;
+    justify-content: center;
+}
 
-    .travel-filter-slider {
-        width: auto;
-        min-width: 280px;
-        max-width: 400px;
-    }
+.travel-filter-slider {
+    width: auto;
+    min-width: 280px;
+    max-width: 400px;
+}
 
 
 .wishlist-badge {
@@ -2561,7 +2626,7 @@ body.travel-journal-active #coin-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
     z-index: 10;
 }
 
@@ -2623,8 +2688,15 @@ body.travel-journal-active #coin-container {
 }
 
 @keyframes lightboxZoom {
-    from { opacity: 0; transform: scale(0.92) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .lightbox-nav-btn {
@@ -2651,8 +2723,13 @@ body.travel-journal-active #coin-container {
     transform: translateY(-50%) scale(1.1);
 }
 
-.lightbox-nav-btn.prev { left: 30px; }
-.lightbox-nav-btn.next { right: 30px; }
+.lightbox-nav-btn.prev {
+    left: 30px;
+}
+
+.lightbox-nav-btn.next {
+    right: 30px;
+}
 
 .lightbox-bottom-bar {
     position: absolute;
@@ -2663,7 +2740,7 @@ body.travel-journal-active #coin-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
     z-index: 10;
 }
 
@@ -2737,18 +2814,27 @@ body.travel-journal-active #coin-container {
         backdrop-filter: blur(10px);
         border-color: rgba(255, 255, 255, 0.2);
     }
-    .lightbox-nav-btn.prev { left: 15px; }
-    .lightbox-nav-btn.next { right: 15px; }
-    
+
+    .lightbox-nav-btn.prev {
+        left: 15px;
+    }
+
+    .lightbox-nav-btn.next {
+        right: 15px;
+    }
+
     .lightbox-main {
         padding: 40px 10px;
     }
+
     .lightbox-action-btn span {
         display: none;
     }
+
     .lightbox-action-btn {
         padding: 0 1.2rem;
     }
+
     .action-separator {
         display: none;
     }
@@ -2859,7 +2945,7 @@ body.travel-journal-active #coin-container {
     overflow: hidden;
     aspect-ratio: 4/3;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .album-item img {
@@ -2876,7 +2962,7 @@ body.travel-journal-active #coin-container {
 .photo-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     opacity: 0;
     transition: all 0.3s ease;
@@ -2937,7 +3023,8 @@ body.travel-journal-active #coin-container {
     backdrop-filter: blur(4px);
 }
 
-.album-item:hover .photo-checkbox, .album-item.selected .photo-checkbox {
+.album-item:hover .photo-checkbox,
+.album-item.selected .photo-checkbox {
     opacity: 1;
 }
 
@@ -3026,8 +3113,15 @@ body.travel-journal-active #coin-container {
 
 
 @keyframes toolbarIn {
-    from { opacity: 0; transform: translateY(-15px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .selection-info {
@@ -3104,6 +3198,7 @@ body.travel-journal-active #coin-container {
     color: white;
     transform: scale(1.05);
 }
+
 /* --- SPIN WHEEL --- */
 body.spin-wheel-active {
     background: #050510;
@@ -3149,8 +3244,7 @@ body.spin-wheel-active::after {
             transparent 270deg,
             rgba(14, 165, 233, 0.03) 300deg,
             transparent 330deg,
-            rgba(99, 102, 241, 0.03) 360deg
-        );
+            rgba(99, 102, 241, 0.03) 360deg);
     animation: wheelRaysSpin 40s linear infinite;
     z-index: -1;
     pointer-events: none;
@@ -3161,10 +3255,12 @@ body.spin-wheel-active::after {
         transform: scale(1) rotate(0deg);
         filter: blur(60px) brightness(1);
     }
+
     50% {
         transform: scale(1.15) rotate(3deg);
         filter: blur(70px) brightness(1.15);
     }
+
     100% {
         transform: scale(1.05) rotate(-2deg);
         filter: blur(60px) brightness(1.05);
@@ -3172,8 +3268,13 @@ body.spin-wheel-active::after {
 }
 
 @keyframes wheelRaysSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .spin-wheel-view {
@@ -3197,11 +3298,14 @@ body.spin-wheel-active::after {
 }
 
 @keyframes colorCycle {
-    0%, 100% { 
+
+    0%,
+    100% {
         color: #a855f7;
         filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.4));
     }
-    50% { 
+
+    50% {
         color: #ef4444;
         filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.5));
     }
@@ -3241,10 +3345,21 @@ body.spin-wheel-active::after {
 }
 
 @keyframes pointerWiggle {
-    0% { transform: translateX(-50%) rotate(0deg); }
-    25% { transform: translateX(-50%) rotate(-15deg); }
-    75% { transform: translateX(-50%) rotate(10deg); }
-    100% { transform: translateX(-50%) rotate(0deg); }
+    0% {
+        transform: translateX(-50%) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-50%) rotate(-15deg);
+    }
+
+    75% {
+        transform: translateX(-50%) rotate(10deg);
+    }
+
+    100% {
+        transform: translateX(-50%) rotate(0deg);
+    }
 }
 
 .wheel-pointer::after {
@@ -3264,7 +3379,7 @@ body.spin-wheel-active::after {
     position: relative;
     border-radius: 50%;
     border: 12px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 
+    box-shadow:
         0 0 0 4px rgba(255, 255, 255, 0.02),
         0 30px 100px rgba(0, 0, 0, 0.8),
         inset 0 0 80px rgba(0, 0, 0, 0.6);
@@ -3281,13 +3396,14 @@ body.spin-wheel-active::after {
 
 @keyframes purpleWheelGlow {
     from {
-        box-shadow: 
+        box-shadow:
             0 0 20px rgba(168, 85, 247, 0.2),
             0 30px 100px rgba(0, 0, 0, 0.8),
             0 0 60px rgba(168, 85, 247, 0.1);
     }
+
     to {
-        box-shadow: 
+        box-shadow:
             0 0 60px rgba(168, 85, 247, 0.6),
             0 30px 120px rgba(0, 0, 0, 0.9),
             0 0 120px rgba(168, 85, 247, 0.3);
@@ -3305,8 +3421,13 @@ body.spin-wheel-active::after {
 }
 
 @keyframes idleRotation {
-    from { transform: rotate(var(--current-rotation, 0deg)); }
-    to { transform: rotate(calc(var(--current-rotation, 0deg) + 360deg)); }
+    from {
+        transform: rotate(var(--current-rotation, 0deg));
+    }
+
+    to {
+        transform: rotate(calc(var(--current-rotation, 0deg) + 360deg));
+    }
 }
 
 .wheel-actions {
@@ -3337,9 +3458,17 @@ body.spin-wheel-active::after {
 }
 
 @keyframes guidePulse {
-    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 15px rgba(99, 102, 241, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
 }
 
 .wheel-people-grid {
@@ -3394,7 +3523,7 @@ body.spin-wheel-active::after {
     justify-content: center;
     cursor: pointer;
     z-index: 50;
-    box-shadow: 
+    box-shadow:
         0 0 0 10px rgba(255, 255, 255, 0.05),
         0 15px 40px rgba(0, 0, 0, 0.5),
         inset 0 -4px 8px rgba(0, 0, 0, 0.1);
@@ -3410,7 +3539,7 @@ body.spin-wheel-active::after {
 
 .wheel-center-btn:hover {
     transform: translate(-50%, -50%) scale(1.1);
-    box-shadow: 
+    box-shadow:
         0 0 0 12px rgba(255, 255, 255, 0.15),
         0 15px 40px rgba(0, 0, 0, 0.6);
 }
@@ -3459,7 +3588,7 @@ body.spin-wheel-active::after {
         grid-template-columns: 1fr;
         gap: 0;
     }
-    
+
     .modal {
         width: 95% !important;
         padding: 1.5rem !important;
@@ -3510,24 +3639,36 @@ body.spin-wheel-active::after {
 }
 
 @keyframes winnerRainbow {
-    to { background-position: 300% center; }
+    to {
+        background-position: 300% center;
+    }
 }
 
 @keyframes winnerFloat {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-10px) scale(1.05); }
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-10px) scale(1.05);
+    }
 }
 
 @media (max-width: 600px) {
     .spin-wheel-view {
-        margin-top: 160px; /* More space for navbar on mobile */
+        margin-top: 160px;
+        /* More space for navbar on mobile */
         margin-bottom: 80px;
     }
+
     .wheel-container-wrapper {
         width: 320px;
         height: 320px;
         margin: 2rem auto;
     }
+
     .animate-fun {
         font-size: 2.2rem;
     }
@@ -3539,16 +3680,16 @@ body.spin-wheel-active::after {
         width: 96%;
         padding: 0 1.5rem;
     }
-    
+
     .nav-links {
         gap: 0.5rem;
     }
-    
+
     .nav-links a {
         padding: 0.5rem 0.8rem;
         gap: 0.4rem;
     }
-    
+
     .nav-links a span {
         max-width: 0;
         opacity: 0;
@@ -3563,7 +3704,7 @@ body.spin-wheel-active::after {
         height: 64px;
         border-radius: 20px;
     }
-    
+
     .logo {
         font-size: 1.2rem;
         margin-right: 1rem;
@@ -3596,7 +3737,9 @@ body.spin-wheel-active::after {
         justify-content: center;
     }
 
-    .main-view, .cash-fund-view, .travel-journal-view {
+    .main-view,
+    .cash-fund-view,
+    .travel-journal-view {
         margin-top: 100px;
         width: 94%;
     }
@@ -3653,7 +3796,8 @@ body.spin-wheel-active::after {
     .details-hero {
         height: auto;
         min-height: 550px;
-        padding-top: 160px; /* More space to clear navbar */
+        padding-top: 160px;
+        /* More space to clear navbar */
         border-radius: 0 0 32px 32px;
     }
 
@@ -3665,14 +3809,17 @@ body.spin-wheel-active::after {
     }
 
     .details-hero-content {
-        padding: 2.5rem 1.5rem 2.5rem; /* Increased top padding */
+        padding: 2.5rem 1.5rem 2.5rem;
+        /* Increased top padding */
     }
 
     .details-hero-content h1 {
-        font-size: 2.8rem; /* Slightly smaller for safety */
+        font-size: 2.8rem;
+        /* Slightly smaller for safety */
         letter-spacing: -1.5px;
         margin-bottom: 2rem;
-        margin-top: 1rem; /* Extra gap from back button */
+        margin-top: 1rem;
+        /* Extra gap from back button */
     }
 
     .details-meta {
@@ -3755,8 +3902,15 @@ body.spin-wheel-active::after {
 }
 
 @keyframes toolbarFloatIn {
-    from { opacity: 0; transform: translate(-50%, 20px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 
 .toolbar-label {
@@ -3768,10 +3922,12 @@ body.spin-wheel-active::after {
     .toolbar-label {
         display: none;
     }
+
     .selection-toolbar {
         gap: 0.8rem;
         padding: 0.6rem 1rem;
     }
+
     .album-item.selected {
         transform: scale(0.95);
         opacity: 0.8;
@@ -3797,9 +3953,17 @@ body.spin-wheel-active::after {
 }
 
 @keyframes pulse-red {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-    70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
 }
 
 .modal-content-premium p {
@@ -3945,7 +4109,7 @@ body.spin-wheel-active::after {
     top: 3px;
     left: 3px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .wishlist-toggle-premium.active .toggle-thumb {
@@ -4138,8 +4302,13 @@ body.spin-wheel-active::after {
 }
 
 @keyframes orbit {
-    from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+    from {
+        transform: rotate(0deg) translateX(50px) rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg) translateX(50px) rotate(-360deg);
+    }
 }
 
 @media (max-width: 480px) {
@@ -4209,8 +4378,9 @@ body.spin-wheel-active::after {
         padding-left: 0.8rem;
         border-left: none;
     }
-    
-    .nav-avatar, .nav-logout-btn {
+
+    .nav-avatar,
+    .nav-logout-btn {
         width: 32px;
         height: 32px;
     }

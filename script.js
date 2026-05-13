@@ -36,8 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const db = firebase.database();
 
     // Data State
-    window.people = [];
-    window.items = [];
+    window.people = [...DEFAULT_PEOPLE];
+    window.items = [
+        { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
+        { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
+        { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
+    ];
     window.cashData = {};
     window.travelData = [];
     window.wheelParticipants = [];
@@ -54,11 +58,28 @@ document.addEventListener('DOMContentLoaded', () => {
             wheelParticipants: window.wheelParticipants
         };
         
-        // Save to Firebase
-        db.ref('bekantans_data').set(state);
+        // Save to Firebase (No 5MB limit here, but RTDB has its own limits)
+        db.ref('bekantans_data').set(state).catch(err => {
+            console.error('Firebase Save Error:', err);
+        });
         
         // Save to LocalStorage for instant loading
-        localStorage.setItem('bekantans_cache', JSON.stringify(state));
+        try {
+            localStorage.setItem('bekantans_cache', JSON.stringify(state));
+        } catch (e) {
+            console.warn('LocalStorage Quota Exceeded. Attempting to save lightweight cache...');
+            // Fallback: Save state without heavy albums to keep the app functional
+            try {
+                const lightTravelData = window.travelData.map(dest => ({
+                    ...dest,
+                    album: [] // Remove heavy album photos from cache to save space
+                }));
+                const lightState = { ...state, travelData: lightTravelData };
+                localStorage.setItem('bekantans_cache', JSON.stringify(lightState));
+            } catch (e2) {
+                console.error('Lightweight cache also failed:', e2);
+            }
+        }
     }
 
     // --- Initial Cache Load ---
@@ -66,8 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cachedData) {
         try {
             const data = JSON.parse(cachedData);
-            window.people = data.people || [];
-            window.items = data.items || [];
+            window.people = (data.people && data.people.length > 0) ? data.people : [...DEFAULT_PEOPLE];
+            window.items = (data.items && data.items.length > 0) ? data.items : [
+                { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
+                { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
+                { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
+            ];
             window.cashData = data.cashData || {};
             window.travelData = data.travelData || [];
             window.wheelParticipants = data.wheelParticipants || [];
@@ -236,9 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.closeModal = () => {
         modalOverlay.classList.add('hidden');
+        const modalActions = document.querySelector('.modal-actions');
+        if (modalActions) modalActions.style.display = 'flex';
+        
         const saveBtn = document.getElementById('modal-save');
         saveBtn.textContent = 'Save';
         saveBtn.style.background = '';
+        saveBtn.disabled = false;
     };
 
     const style = document.createElement('style');
@@ -687,6 +716,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modalTitle.textContent = title;
         modalContent.innerHTML = `
             <div class="modal-content-premium">
+                <div class="modal-warning-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
                 <p>${message}</p>
                 <div class="modal-actions-premium">
                     <button class="btn-modal btn-modal-cancel" id="modal-confirm-cancel">Cancel</button>
@@ -694,6 +726,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+        
+        // Hide default modal actions to prevent doubling
+        const defaultActions = document.querySelector('.modal-actions');
+        if (defaultActions) defaultActions.style.display = 'none';
+        
         modalOverlay.classList.remove('hidden');
         
         const cancelBtn = document.getElementById('modal-confirm-cancel');
@@ -747,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.bulkDownload = (destId) => {
         const dest = window.travelData.find(d => d.id === destId);
         if (dest && dest.album) {
-            window.selectedPhotos.forEach(index => {
+                    window.selectedPhotos.forEach(index => {
                 window.downloadPhoto(dest.album[index], `trip-photo-${index}.png`);
             });
         }
@@ -760,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
 
-        // Cloudinary Config (Unsigned Upload)
+        // Cloudinary Config
         const CLOUD_NAME = 'dtdhkgfic';
         const UPLOAD_PRESET = 'tclcfwwr';
         const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
@@ -769,65 +806,67 @@ document.addEventListener('DOMContentLoaded', () => {
         const uploadBtn = document.querySelector('.action-btn-pill');
         const originalBtnText = uploadBtn.innerHTML;
         uploadBtn.disabled = true;
-        uploadBtn.innerHTML = `<span class="spinner"></span> 0/${files.length}`;
-
+        
         if (!dest.album) dest.album = [];
-        const currentCount = dest.album.length;
+        const startIndex = dest.album.length;
         let uploadedCount = 0;
 
-        try {
-            for (const file of files) {
-                // 1. Get DataURL for compression
+        // 1. Optimistic UI: Add local blob URLs immediately
+        const tempUrls = files.map(file => URL.createObjectURL(file));
+        dest.album.push(...tempUrls);
+        renderAlbum(dest);
+
+        // 2. Parallel Uploads
+        const uploadPromises = files.map(async (file, i) => {
+            try {
+                // Compression for stability
                 const dataUrl = await new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target.result);
                     reader.readAsDataURL(file);
                 });
 
-                // 2. High-Quality Compression for Stability (2500px, 0.9 quality)
-                // This keeps the photo "Full HD" but makes it 5x more stable to upload.
                 let fileToUpload = file;
                 try {
-                    const compressedBase64 = await compressImage(dataUrl, 2500, 0.9);
-                    // Convert base64 back to a blob for more stable Cloudinary upload
+                    const compressedBase64 = await compressImage(dataUrl, 2000, 0.85);
                     const res = await fetch(compressedBase64);
                     fileToUpload = await res.blob();
-                } catch (e) {
-                    console.warn('Compression skipped, using original file', e);
-                }
+                } catch (e) { console.warn('Compression skipped', e); }
 
-                // 3. Prepare Cloudinary Upload
                 const formData = new FormData();
                 formData.append('file', fileToUpload);
                 formData.append('upload_preset', UPLOAD_PRESET);
 
-                const response = await fetch(CLOUDINARY_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || 'Cloudinary upload failed');
-                }
+                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Upload failed');
 
                 const data = await response.json();
-                dest.album.push(data.secure_url);
+                
+                // Replace temp URL with real URL
+                const realIndex = startIndex + i;
+                dest.album[realIndex] = data.secure_url;
+                
+                // Revoke object URL
+                URL.revokeObjectURL(tempUrls[i]);
                 
                 uploadedCount++;
                 uploadBtn.innerHTML = `<span class="spinner"></span> ${uploadedCount}/${files.length}`;
+                
+                // Save state and re-render for this specific success
+                saveState();
+                renderAlbum(dest);
+            } catch (error) {
+                console.error('Upload error:', error);
+                // On error, we might want to remove the temp item or show an error state
+                // For now, let's just leave it (it will be a broken local URL after refresh)
             }
+        });
 
-            saveState();
-            renderAlbum(dest);
-        } catch (error) {
-            console.error('Stability Error:', error);
-            alert(`Stability Error: ${error.message}. Please check if your Cloudinary Preset is set to "Unsigned" and saved.`);
-        } finally {
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = originalBtnText;
-            event.target.value = ''; // Reset input
-        }
+        await Promise.all(uploadPromises);
+
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalBtnText;
+        event.target.value = ''; // Reset input
     };
 
     async function compressImage(dataUrl, maxWidth, quality) {
@@ -1367,6 +1406,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
             const fileInput = document.getElementById('m-dest-image-file');
 
+            const saveBtn = document.getElementById('modal-save');
+            saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            saveBtn.disabled = true;
+
             const saveDest = (imgUrl) => {
                 if (name) {
                     window.travelData.push({ 
@@ -1381,16 +1424,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     saveState();
                 }
-                modalOverlay.classList.add('hidden');
-                renderPeople();
-                renderItems();
-                renderCashFund();
+                window.closeModal();
                 renderTravelJournal();
             };
 
             if (fileInput && fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => saveDest(e.target.result);
+                reader.onload = async (e) => {
+                    // Compress cover photo to 1200px for storage efficiency
+                    try {
+                        const compressed = await compressImage(e.target.result, 1200, 0.8);
+                        saveDest(compressed);
+                    } catch (err) {
+                        saveDest(e.target.result);
+                    }
+                };
                 reader.readAsDataURL(fileInput.files[0]);
                 return;
             } else {
@@ -1410,6 +1458,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
             const fileInput = document.getElementById('m-dest-image-file');
 
+            const saveBtn = document.getElementById('modal-save');
+            saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            saveBtn.disabled = true;
+
             const saveDest = (imgUrl) => {
                 if (name) {
                     window.travelData[destIndex] = {
@@ -1424,13 +1476,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     saveState();
                 }
-                modalOverlay.classList.add('hidden');
+                window.closeModal();
                 renderTravelJournal();
             };
 
             if (fileInput && fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => saveDest(e.target.result);
+                reader.onload = async (e) => {
+                    try {
+                        const compressed = await compressImage(e.target.result, 1200, 0.8);
+                        saveDest(compressed);
+                    } catch (err) {
+                        saveDest(e.target.result);
+                    }
+                };
                 reader.readAsDataURL(fileInput.files[0]);
                 return;
             } else {
@@ -1600,8 +1659,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const travelChanged = JSON.stringify(data.travelData) !== JSON.stringify(window.travelData);
             const wheelChanged = JSON.stringify(data.wheelParticipants) !== JSON.stringify(window.wheelParticipants);
 
-            window.people = data.people || [];
-            window.items = data.items || [];
+            window.people = (data.people && data.people.length > 0) ? data.people : window.people;
+            window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
             window.travelData = data.travelData || [];
             window.wheelParticipants = data.wheelParticipants || [];
@@ -1609,15 +1668,23 @@ document.addEventListener('DOMContentLoaded', () => {
             lastDataString = currentDataString;
 
             // Targeted Re-rendering
-            if (peopleChanged || itemsChanged) {
+            if (peopleChanged) {
                 if (!mainView.classList.contains('hidden')) {
                     renderPeople();
                     renderItems();
                 }
+                if (!cashView.classList.contains('hidden')) renderCashFund();
+                if (!spinWheelView.classList.contains('hidden')) window.initWheel();
+            } else if (itemsChanged) {
+                if (!mainView.classList.contains('hidden')) renderItems();
             }
             
             if (cashChanged) {
                 if (!cashView.classList.contains('hidden')) renderCashFund();
+            }
+
+            if (wheelChanged) {
+                if (!spinWheelView.classList.contains('hidden')) window.initWheel();
             }
             
             if (travelChanged) {
@@ -1764,10 +1831,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let html = `
             <div class="input-group">
-                <label>Add Name to Wheel</label>
-                <div style="display: flex; gap: 0.8rem;">
-                    <input type="text" id="m-wheel-name" placeholder="Enter name..." autofocus>
-                    <button class="primary-btn small-btn" onclick="window.addWheelPerson()">Add</button>
+                <label>Wheel Participants</label>
+                <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                    <div style="flex: 1; display: flex; gap: 0.5rem;">
+                        <input type="text" id="m-wheel-name" placeholder="Enter name..." autofocus>
+                        <button class="primary-btn small-btn" onclick="window.addWheelPerson()">Add</button>
+                    </div>
+                    <button class="secondary-btn small-btn" onclick="window.syncWheelFromPeople()" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.2); color: #818cf8;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"></path></svg>
+                        Sync All Participants
+                    </button>
                 </div>
             </div>
             <div class="wheel-people-list mt-2" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
@@ -1793,7 +1866,27 @@ document.addEventListener('DOMContentLoaded', () => {
         modalCancel.style.display = 'block';
         currentModalAction = 'manage-wheel-done';
         modalOverlay.classList.remove('hidden');
-        document.getElementById('m-wheel-name').focus();
+        const input = document.getElementById('m-wheel-name');
+        if (input) input.focus();
+    };
+
+    window.syncWheelFromPeople = () => {
+        if (window.people.length === 0) {
+            alert('No participants found in the main list. Add them in the Split Bill or Cash Fund menu first.');
+            return;
+        }
+        
+        // Merge without duplicates based on name
+        const currentNames = new Set(window.wheelParticipants.map(p => p.name.toLowerCase()));
+        window.people.forEach(p => {
+            if (!currentNames.has(p.name.toLowerCase())) {
+                window.wheelParticipants.push({ id: Date.now() + Math.random(), name: p.name });
+            }
+        });
+        
+        saveState();
+        window.initWheel();
+        window.manageWheelParticipants(); // Re-render modal
     };
 
     window.addWheelPerson = () => {

@@ -159,6 +159,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fileInput = document.getElementById('bill-image');
     const coinContainer = document.getElementById('coin-container');
+    const loginView = document.getElementById('login-view');
+    const navbar = document.querySelector('.navbar');
+
+    // --- Authentication ---
+    const AUTH_KEY = 'bekantans_auth';
+    const VALID_USER = 'bekantans';
+    const VALID_PASS = 'trip2026';
+
+    window.handleLogin = () => {
+        const user = document.getElementById('login-username').value;
+        const pass = document.getElementById('login-password').value;
+        const errorMsg = document.getElementById('login-error');
+
+        if (user === VALID_USER && pass === VALID_PASS) {
+            sessionStorage.setItem(AUTH_KEY, 'true');
+            loginView.classList.add('hidden');
+            navbar.classList.remove('hidden');
+            showView('split');
+            
+            // Re-render to ensure data is visible
+            renderPeople();
+            renderItems();
+        } else {
+            errorMsg.classList.remove('hidden');
+            setTimeout(() => {
+                errorMsg.classList.add('hidden');
+            }, 3000);
+        }
+    };
+
+    // Check auth on load
+    if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+        if (loginView) loginView.classList.add('hidden');
+        if (navbar) navbar.classList.remove('hidden');
+    } else {
+        if (loginView) loginView.classList.remove('hidden');
+        if (navbar) navbar.classList.add('hidden');
+        // Prevent seeing other views while not logged in
+        document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+    }
 
     let currentDate = new Date();
     let currentModalAction = '';
@@ -222,6 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Navigation ---
     window.showView = function(viewName) {
+        const AUTH_KEY = 'bekantans_auth';
+        // If not logged in, force login view
+        if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
+            if (loginView) loginView.classList.remove('hidden');
+            if (navbar) navbar.classList.add('hidden');
+            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
+            return;
+        }
+
         [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView].forEach(v => v?.classList.add('hidden'));
         [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
@@ -318,8 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(style);
     }
 
-    // Scroll Handler for Navbar
-    const navbar = document.querySelector('.navbar');
+    // Scroll Handler for Navbar (uses global navbar)
     window.onscroll = () => {
         if (window.scrollY > 50) {
             navbar.classList.add('scrolled');
@@ -1901,12 +1949,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Call this inside showView or whenever data changes
-    const originalShowView = window.showView;
-    window.showView = function(viewName) {
-        if (typeof originalShowView === 'function') originalShowView(viewName);
-        if (viewName === 'wheel') updateWheelStateClasses();
-    };
 
     window.manageWheelParticipants = () => {
         modalTitle.textContent = 'Manage Wheel Names';

@@ -711,10 +711,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const dest = window.travelData.find(d => d.id === destId);
         if (!dest) return;
         
-        const files = event.target.files;
+        const files = Array.from(event.target.files);
         if (!files.length) return;
 
-        // Show loading state in the button
+        // Stability Check: Limit total photos per destination
+        const MAX_PHOTOS = 20;
+        const currentCount = (dest.album || []).length;
+        if (currentCount >= MAX_PHOTOS) {
+            alert(`You have reached the maximum limit of ${MAX_PHOTOS} photos for this destination. Please delete some before adding more.`);
+            return;
+        }
+
+        const remainingSlots = MAX_PHOTOS - currentCount;
+        const filesToProcess = files.slice(0, remainingSlots);
+
+        if (files.length > remainingSlots) {
+            alert(`Only ${remainingSlots} photos will be uploaded to keep the app stable.`);
+        }
+
+        // Show loading state
         const uploadBtn = document.querySelector('.action-btn-pill');
         const originalBtnText = uploadBtn.innerHTML;
         uploadBtn.disabled = true;
@@ -722,25 +737,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!dest.album) dest.album = [];
 
-        const processFile = (file) => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const compressed = await compressImage(e.target.result, 1200, 0.7);
-                        resolve(compressed);
-                    } catch (err) {
-                        console.error('Compression failed:', err);
-                        resolve(e.target.result); // Fallback to original if compression fails
-                    }
-                };
-                reader.readAsDataURL(file);
-            });
-        };
-
         try {
-            const results = await Promise.all(Array.from(files).map(file => processFile(file)));
-            dest.album.push(...results);
+            // Process SEQUENTIALLY to prevent memory crashes
+            for (const file of filesToProcess) {
+                const dataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+                
+                try {
+                    // Aggressive compression for RTDB stability: 1000px, 0.6 quality
+                    const compressed = await compressImage(dataUrl, 1000, 0.6);
+                    dest.album.push(compressed);
+                } catch (err) {
+                    console.error('Compression error:', err);
+                }
+                
+                // Partial progress update for UI feedback
+                uploadBtn.innerHTML = `<span class="spinner"></span> ${dest.album.length - currentCount}/${filesToProcess.length}`;
+            }
+
             saveState();
             renderAlbum(dest);
         } catch (error) {
@@ -749,6 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = originalBtnText;
+            event.target.value = ''; // Reset input
         }
     };
 
@@ -1511,20 +1529,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Init & Sync ---
+    // --- Init & Sync ---
+    let lastDataString = '';
+
     db.ref('bekantans_data').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
+            const currentDataString = JSON.stringify(data);
+            if (currentDataString === lastDataString) return; // Skip if no real changes
+            
+            // Detect which part changed for targeted rendering
+            const peopleChanged = JSON.stringify(data.people) !== JSON.stringify(window.people);
+            const itemsChanged = JSON.stringify(data.items) !== JSON.stringify(window.items);
+            const cashChanged = JSON.stringify(data.cashData) !== JSON.stringify(window.cashData);
+            const travelChanged = JSON.stringify(data.travelData) !== JSON.stringify(window.travelData);
+            const wheelChanged = JSON.stringify(data.wheelParticipants) !== JSON.stringify(window.wheelParticipants);
+
             window.people = data.people || [];
             window.items = data.items || [];
             window.cashData = data.cashData || {};
             window.travelData = data.travelData || [];
             window.wheelParticipants = data.wheelParticipants || [];
             
-            // Re-render everything when data changes
-            renderPeople();
-            renderItems();
-            renderCashFund();
-            renderTravelJournal();
+            lastDataString = currentDataString;
+
+            // Targeted Re-rendering
+            if (peopleChanged || itemsChanged) {
+                if (!mainView.classList.contains('hidden')) {
+                    renderPeople();
+                    renderItems();
+                }
+            }
+            
+            if (cashChanged) {
+                if (!cashView.classList.contains('hidden')) renderCashFund();
+            }
+            
+            if (travelChanged) {
+                // If in details view, update it but don't close it
+                if (!travelDetailsView.classList.contains('hidden') && window.currentAlbumDestId) {
+                    const activeDest = window.travelData.find(d => d.id === window.currentAlbumDestId);
+                    if (activeDest) {
+                        // We don't want to full-render the details view as it might disrupt interaction
+                        // But we should update the album if it's the album tab
+                        const albumGrid = document.getElementById('album-grid');
+                        if (albumGrid) renderAlbum(activeDest);
+                    }
+                }
+                
+                // Only render the main list if we are looking at it
+                if (!travelView.classList.contains('hidden')) renderTravelJournal();
+            }
         }
     });
 

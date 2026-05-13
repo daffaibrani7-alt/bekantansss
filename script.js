@@ -330,45 +330,52 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.addDestination = () => {
-        modalTitle.textContent = 'Add Destination';
+        modalTitle.textContent = 'New Adventure';
         modalContent.innerHTML = `
-            <div class="input-group">
-                <label>Destination Name</label>
-                <input type="text" id="m-dest-name" placeholder="e.g. Nusa Penida" autofocus>
-            </div>
-            <div class="input-group">
-                <label>Location</label>
-                <input type="text" id="m-dest-location" placeholder="e.g. Bali, Indonesia">
-            </div>
-            <div class="input-grid-responsive">
+            <div class="form-section-premium">
                 <div class="input-group">
-                    <label>Duration</label>
-                    <input type="text" id="m-dest-duration" placeholder="e.g. 0 Days (Default)">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Trip Title</label>
+                    <input type="text" id="m-dest-name" placeholder="Where are you going?" autofocus>
                 </div>
                 <div class="input-group">
-                    <label>Date</label>
-                    <input type="date" id="m-dest-date">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Location</label>
+                    <input type="text" id="m-dest-location" placeholder="City, Country">
                 </div>
-            </div>
-            <div class="input-group">
-                <label>Total Cost (Rp)</label>
-                <input type="number" id="m-dest-cost" placeholder="e.g. 1500000">
-            </div>
-            <div class="input-group">
-                <label style="display: flex; align-items: center; gap: 0.8rem; cursor: pointer;">
-                    <input type="checkbox" id="m-dest-wishlist" style="width: 20px; height: 20px; cursor: pointer;">
-                    <span style="font-weight: 700;">Mark as Wishlist</span>
-                </label>
-            </div>
-            <div class="input-group">
-                <label>Add Photos</label>
-                <div class="image-upload-wrapper" id="image-upload-wrapper" onclick="document.getElementById('m-dest-image-file').click()">
-                    <div class="upload-placeholder" id="upload-placeholder">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; color: var(--accent-primary);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <span>Click to upload image</span>
+                
+                <div class="input-grid-responsive">
+                    <div class="input-group">
+                        <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Duration</label>
+                        <input type="text" id="m-dest-duration" placeholder="e.g. 3 Days">
                     </div>
-                    <img id="image-preview" class="hidden" src="" alt="Preview">
-                    <input type="file" id="m-dest-image-file" accept="image/*" hidden onchange="window.previewImage(event)">
+                    <div class="input-group">
+                        <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Date</label>
+                        <input type="date" id="m-dest-date">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"/></svg> Total Cost (Rp)</label>
+                    <input type="number" id="m-dest-cost" placeholder="Estimated Budget">
+                </div>
+
+                <div class="wishlist-toggle-premium" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
+                    <input type="checkbox" id="m-dest-wishlist" hidden>
+                    <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                    <span>Add to Wishlist</span>
+                </div>
+
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Cover Photo</label>
+                    <div class="image-upload-wrapper" id="image-upload-wrapper" onclick="document.getElementById('m-dest-image-file').click()">
+                        <div class="upload-placeholder" id="upload-placeholder">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <span>Choose Trip Photo</span>
+                        </div>
+                        <img id="image-preview" class="hidden" src="" alt="Preview">
+                        <input type="file" id="m-dest-image-file" accept="image/*" hidden onchange="window.previewImage(event)">
+                    </div>
                 </div>
             </div>
         `;
@@ -390,56 +397,68 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         }
     };
-
     window.editDestination = (id) => {
         const dest = window.travelData.find(d => d.id === id);
         if (!dest) return;
         
-        modalTitle.textContent = 'Edit Destination';
+        modalTitle.textContent = 'Edit Adventure';
         modalContent.innerHTML = `
-            <div class="input-group">
-                <label>Destination Name</label>
-                <input type="text" id="m-dest-name" value="${dest.name}" autofocus>
-            </div>
-            <div class="input-group">
-                <label>Location</label>
-                <input type="text" id="m-dest-location" value="${dest.location}">
-            </div>
-            <div class="input-grid-responsive">
+            <div class="form-section-premium">
                 <div class="input-group">
-                    <label>Duration</label>
-                    <input type="text" id="m-dest-duration" value="${dest.duration}">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Trip Title</label>
+                    <input type="text" id="m-dest-name" value="${dest.name}" autofocus>
                 </div>
                 <div class="input-group">
-                    <label>Date</label>
-                    <input type="date" id="m-dest-date" value="${dest.date}">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Location</label>
+                    <input type="text" id="m-dest-location" value="${dest.location}">
                 </div>
-            </div>
-            <div class="input-group">
-                <label>Total Cost (Rp)</label>
-                <input type="number" id="m-dest-cost" value="${dest.cost}">
-            </div>
-            <div class="input-group">
-                <label style="display: flex; align-items: center; gap: 0.8rem; cursor: pointer;">
-                    <input type="checkbox" id="m-dest-wishlist" ${dest.isWishlist ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
-                    <span style="font-weight: 700;">Mark as Wishlist</span>
-                </label>
-            </div>
-            <div class="input-group">
-                <label>Update Photo</label>
-                <div class="image-upload-wrapper" id="image-upload-wrapper" onclick="document.getElementById('m-dest-image-file').click()">
-                    <div class="upload-placeholder hidden" id="upload-placeholder">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px; color: var(--accent-primary);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <span>Click to update image</span>
+                
+                <div class="input-grid-responsive">
+                    <div class="input-group">
+                        <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Duration</label>
+                        <input type="text" id="m-dest-duration" value="${dest.duration}">
                     </div>
-                    <img id="image-preview" src="${dest.image}" alt="Preview">
-                    <input type="file" id="m-dest-image-file" accept="image/*" hidden onchange="window.previewImage(event)">
+                    <div class="input-group">
+                        <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Date</label>
+                        <input type="date" id="m-dest-date" value="${dest.date}">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"/></svg> Total Cost (Rp)</label>
+                    <input type="number" id="m-dest-cost" value="${dest.cost}">
+                </div>
+
+                <div class="wishlist-toggle-premium ${dest.isWishlist ? 'active' : ''}" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
+                    <input type="checkbox" id="m-dest-wishlist" ${dest.isWishlist ? 'checked' : ''} hidden>
+                    <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                    <span>Mark as Wishlist</span>
+                </div>
+
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Update Photo</label>
+                    <span>Wishlist Adventure</span>
+                </div>
+
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Cover Photo</label>
+                    <div class="image-upload-wrapper" onclick="document.getElementById('m-dest-image-file').click()">
+                        <div class="upload-placeholder hidden" id="upload-placeholder">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <span>Change Photo</span>
+                        </div>
+                        <img id="image-preview" src="${dest.image}" alt="Preview" style="display: block; width: 100%; border-radius: 12px;">
+                        <input type="file" id="m-dest-image-file" accept="image/*" hidden onchange="window.previewImage(event)">
+                    </div>
                 </div>
             </div>
         `;
         currentModalAction = 'edit-destination-' + id;
         modalOverlay.classList.remove('hidden');
     };
+
 
     window.viewDestination = (event, id) => {
         if (event.target.closest('.dest-actions')) return;
@@ -1219,85 +1238,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Travel Journal ---
     function renderTravelJournal() {
-        console.log('renderTravelJournal called');
         const destGrid = document.getElementById('destination-grid');
         const travelTotalDisplay = document.getElementById('total-travel-cost');
-        if (!destGrid) {
-            console.error('destination-grid not found');
-            return;
-        }
+        if (!destGrid) return;
 
-        console.log('Rendering travel data:', window.travelData);
-        destGrid.innerHTML = '';
         let totalCost = 0;
-
         const filteredData = window.travelData.filter(dest => {
             if (window.travelFilter === 'all') return true;
             if (window.travelFilter === 'wishlist') return dest.isWishlist === true;
             return true;
         }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
+        // Build HTML as a single string to optimize performance and prevent flicker
+        let html = '';
         filteredData.forEach(dest => {
             if (!dest.isWishlist) totalCost += dest.cost;
-            const card = document.createElement('div');
-            card.className = 'destination-card glass-card';
-            card.setAttribute('onclick', `window.viewDestination(event, ${dest.id})`);
-            card.innerHTML = `
-                <div class="dest-image" style="background-image: url('${dest.image}')">
-                    ${dest.isWishlist ? `
-                        <div class="wishlist-badge">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            Wishlist
-                        </div>
-                    ` : ''}
-                    <div class="dest-date-premium">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        <span class="dd-day">${formatDate(dest.date, 'badge').day}</span>
-                        <span class="dd-month">${formatDate(dest.date, 'badge').month}</span>
-                        <span class="dd-year">${formatDate(dest.date, 'badge').year}</span>
-                    </div>
-                    <div class="dest-actions">
-                        <button class="action-btn-icon edit edit-dest-btn" data-id="${dest.id}">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        </button>
-                        <button class="action-btn-icon delete delete-dest-btn" data-id="${dest.id}">×</button>
-                    </div>
-                </div>
-                <div class="dest-info">
-                    <div class="dest-meta-header">
-                        <div class="dest-meta-row">
-                            <div class="dest-location">
-                                <div class="meta-icon-box">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                </div>
-                                <span>${dest.location}</span>
+            
+            const dateBadge = formatDate(dest.date, 'badge');
+            
+            html += `
+                <div class="destination-card glass-card" onclick="window.viewDestination(event, ${dest.id})">
+                    <div class="dest-image" style="background-image: url('${dest.image}')">
+                        ${dest.isWishlist ? `
+                            <div class="wishlist-badge">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                Wishlist
                             </div>
-                            <div class="dest-duration">
-                                <div class="meta-icon-box">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                </div>
-                                <span>${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
-                            </div>
+                        ` : ''}
+                        <div class="dest-date-premium">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <span class="dd-day">${dateBadge.day}</span>
+                            <span class="dd-month">${dateBadge.month}</span>
+                            <span class="dd-year">${dateBadge.year}</span>
                         </div>
-                        <h3 class="dest-name">${dest.name}</h3>
+                        <div class="dest-actions">
+                            <button class="action-btn-icon edit edit-dest-btn" data-id="${dest.id}">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </button>
+                            <button class="action-btn-icon delete delete-dest-btn" data-id="${dest.id}">×</button>
+                        </div>
                     </div>
-                    <div class="dest-footer">
-                        <div class="dest-cost-box">
-                            <span class="dest-cost-label">Total Cost</span>
-                            <div class="dest-cost-value">${formatRupiah(dest.cost)}</div>
+                    <div class="dest-info">
+                        <div class="dest-meta-header">
+                            <div class="dest-meta-row">
+                                <div class="dest-location">
+                                    <div class="meta-icon-box">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                    </div>
+                                    <span>${dest.location}</span>
+                                </div>
+                                <div class="dest-duration">
+                                    <div class="meta-icon-box">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    </div>
+                                    <span>${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
+                                </div>
+                            </div>
+                            <h3 class="dest-name">${dest.name}</h3>
+                        </div>
+                        <div class="dest-footer">
+                            <div class="dest-cost-box">
+                                <span class="dest-cost-label">Total Cost</span>
+                                <div class="dest-cost-value">${formatRupiah(dest.cost)}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
-            destGrid.appendChild(card);
         });
 
+        destGrid.innerHTML = html || `<div class="empty-state">No destinations found.</div>`;
         if (travelTotalDisplay) travelTotalDisplay.textContent = formatRupiah(totalCost);
         
         const totalDestDisplay = document.getElementById('total-destinations-count');
-        if (totalDestDisplay) {
-            totalDestDisplay.textContent = filteredData.length || 0;
-        }
+        if (totalDestDisplay) totalDestDisplay.textContent = filteredData.length || 0;
     }
 
     function initTravelFilter() {

@@ -200,6 +200,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
     }
 
+    window.handleLogout = () => {
+        sessionStorage.removeItem(AUTH_KEY);
+        window.location.reload();
+    };
+
+    window.showProfile = () => {
+        window.showConfirmModal(
+            'Admin Profile',
+            `
+            <div style="text-align: center; padding: 1rem 0;">
+                <div class="nav-avatar" style="width: 80px; height: 80px; margin: 0 auto 1.5rem; font-size: 2rem;">B</div>
+                <h3 style="color: white; margin-bottom: 0.5rem;">Bekantans Admin</h3>
+                <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">Sharing the joy of travel since 2024</p>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.85rem; color: var(--accent-primary);">
+                    Active Session: Authorized
+                </div>
+            </div>
+            `,
+            () => window.closeModal()
+        );
+    };
+
     let currentDate = new Date();
     let currentModalAction = '';
     const CASH_TARGET = 100000;

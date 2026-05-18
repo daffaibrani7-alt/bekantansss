@@ -1173,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="input-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Travelers</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Participants</label>
                     <div class="assignees-selector-widget" style="display: flex; flex-wrap: wrap; gap: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1rem;">
                         ${Object.keys(window.userProfiles || {}).map(user => {
                             const profile = window.userProfiles[user];
@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="input-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Travelers</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Participants</label>
                     <div class="assignees-selector-widget" style="display: flex; flex-wrap: wrap; gap: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1rem;">
                         ${Object.keys(window.userProfiles || {}).map(user => {
                             const profile = window.userProfiles[user];
@@ -1372,7 +1372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${avatarsHtml}
                         </div>
                         <div style="display: flex; flex-direction: column; margin-left: 0.4rem; text-align: left;">
-                            <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px;">Travelers</span>
+                            <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px;">Participants</span>
                             <span style="font-size: 0.9rem; font-weight: 700; color: white; line-height: 1.1; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 ${displayAssignees.join(', ')}
                             </span>
@@ -2300,12 +2300,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     assigneeHtml = `
-                        <div class="dest-assignee-badge" title="Travelers: ${displayAssignees.join(', ')}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px); gap: 0.4rem;">
-                            <div style="display: flex; align-items: center;">
+                        <div class="dest-assignee-badge" title="Participants: ${displayAssignees.join(', ')}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px); gap: 0.4rem; overflow: visible !important;">
+                            <div style="display: flex; align-items: center; margin-left: 10px; overflow: visible !important;">
                                 ${avatarsHtml}
                             </div>
                             <span class="assignee-name" style="font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.7); max-width: 85px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 0.2rem; margin-right: 0.4rem;">
-                                ${displayAssignees.length === 1 ? displayAssignees[0] : `${displayAssignees.length} Travelers`}
+                                ${displayAssignees.length === 1 ? displayAssignees[0] : `${displayAssignees.length} Participants`}
                             </span>
                         </div>
                     `;

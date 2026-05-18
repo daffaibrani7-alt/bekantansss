@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Split Bill - Rupiah Animation</title>
     <meta name="description" content="Calculate and split your bills easily with beautiful Rupiah coin animations.">
-    <link rel="stylesheet" href="style.css?v=330">
+    <link rel="stylesheet" href="style.css?v=410">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -296,14 +296,12 @@
 
         <!-- SPLIT RESULTS VIEW -->
         <section id="split-results-view" class="split-results-view hidden">
-            <div class="view-header-row">
-                <div class="view-title-group">
-                    <h1 class="view-title">Split Summary</h1>
-                    <p class="view-subtitle">Detailed bill breakdowns for each squad member</p>
-                </div>
-                <button class="back-btn" onclick="window.showView('landing')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    Back to Splitter
+            <div class="summary-header-centered" style="text-align: center; margin-bottom: 2rem;">
+                <h1 class="view-title" style="margin-bottom: 0.2rem; font-size: 2.2rem;">Split Summary</h1>
+                <p class="view-subtitle" id="summary-bill-name" style="color: #c084fc; font-size: 1.1rem; margin-bottom: 1.5rem; letter-spacing: 1px; font-weight: 700;">Trip Bill</p>
+                <button class="primary-btn glow-purple" onclick="window.showView('split')" style="display: inline-flex; width: auto; padding: 0.8rem 2rem; border-radius: 100px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.5rem;"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v6h6"></path></svg>
+                    Split Bill Again
                 </button>
             </div>
             
@@ -656,6 +654,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-    <script src="script.js?v=340"></script>
+    <script src="script.js?v=370"></script>
 </body>
 </html>

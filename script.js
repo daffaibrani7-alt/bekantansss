@@ -10,11 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 7, name: 'Yusuf', color: 'linear-gradient(135deg, #ec4899, #f472b6)' }
     ];
 
-    window.items = [
-        { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
-        { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
-        { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
-    ];
+    window.items = [];
     
     // --- Firebase Initialization ---
     // PASTE YOUR FIREBASE CONFIG HERE
@@ -37,11 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Data State
     window.people = [...DEFAULT_PEOPLE];
-    window.items = [
-        { id: 1, name: 'Indomie Banglades Bias N Puding Telor', price: 33000, assignees: [] },
-        { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
-        { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
-    ];
+    window.items = [];
     window.billTitle = 'Trip Bill';
     window.billPayerId = null;
     window.cashData = {};
@@ -106,11 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const data = JSON.parse(cachedData);
             window.people = (data.people && data.people.length > 0) ? data.people : [...DEFAULT_PEOPLE];
-            window.items = (data.items && data.items.length > 0) ? data.items.map(i => ({...i, assignees: i.assignees || []})) : [
-                { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
-                { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
-                { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
-            ];
+            window.items = (data.items && data.items.length > 0) ? data.items.map(i => ({...i, assignees: i.assignees || []})) : [];
             window.cashData = data.cashData || {};
             window.userProfiles = data.userProfiles || null; // Will fallback later if needed
             window.billTitle = data.billTitle || 'Trip Bill';
@@ -189,10 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('travel-journal-active');
         document.body.classList.remove('spin-wheel-active');
         document.body.classList.remove('profile-active');
+        document.body.classList.remove('home-active');
 
         if (viewName === 'home') {
             if (homeView) homeView.classList.remove('hidden');
             if (navHome) navHome.classList.add('active');
+            document.body.classList.add('home-active');
             if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
         } else if (viewName === 'split') {
             mainView.classList.remove('hidden');
@@ -993,6 +983,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     window.syncBillMetadataUI = function() {
+        const summaryBillName = document.getElementById('summary-bill-name');
+        if (summaryBillName) {
+            summaryBillName.textContent = window.billTitle || 'Trip Bill';
+        }
+
         const titleInput = document.getElementById('bill-title-input');
         if (titleInput) {
             // Only update input value if the user is NOT actively typing in it

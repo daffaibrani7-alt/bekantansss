@@ -206,6 +206,51 @@ body {
     align-items: center;
     justify-content: center;
     padding-top: 84px;
+    position: relative;
+    overflow: hidden;
+    /* Beautiful colorful mesh gradient background */
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 35%);
+}
+
+.landing-view::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+    animation: floatGlow 12s ease-in-out infinite alternate;
+}
+
+.landing-view::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+    filter: blur(90px);
+    z-index: -1;
+    pointer-events: none;
+    animation: floatGlow 16s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatGlow {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        transform: translate(100px, 50px) scale(1.2);
+    }
 }
 
 .hero {
@@ -353,9 +398,9 @@ body {
 
 /* --- DASHBOARD VIEW --- */
 .view-header {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .back-btn {
@@ -382,7 +427,8 @@ body {
     box-shadow: 0 10px 30px var(--accent-glow);
 }
 
-.main-view {
+.main-view,
+.split-results-view {
     width: 94%;
     max-width: 1000px;
     margin: 120px auto 160px;
@@ -1838,7 +1884,8 @@ input:focus {
     animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-body.travel-journal-active #coin-container {
+body.travel-journal-active #coin-container,
+body.home-active #coin-container {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.5s ease;
@@ -3841,6 +3888,7 @@ body.spin-wheel-active::after {
     }
 
     .main-view,
+    .split-results-view,
     .cash-fund-view,
     .travel-journal-view {
         margin-top: 100px;
@@ -4923,6 +4971,43 @@ body.profile-active #coin-container {
         margin-top: 2.5rem;
         margin-bottom: 1.5rem;
     }
+}
+
+body.home-active {
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 35%);
+    background-color: var(--bg-dark);
+}
+
+body.home-active::before {
+    content: '';
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, transparent 70%);
+    filter: blur(80px);
+    z-index: -1;
+    pointer-events: none;
+    animation: floatGlow 12s ease-in-out infinite alternate;
+}
+
+body.home-active::after {
+    content: '';
+    position: fixed;
+    bottom: -10%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+    filter: blur(90px);
+    z-index: -1;
+    pointer-events: none;
+    animation: floatGlow 16s ease-in-out infinite alternate-reverse;
 }
 
 /* --- HOME VIEW (DASHBOARD) --- */

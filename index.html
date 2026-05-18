@@ -51,6 +51,10 @@
     <nav class="navbar floating-nav glass-card hidden">
         <div class="logo" id="nav-logo" style="cursor: pointer;">Bekantans</div>
         <div class="nav-links">
+            <a href="#" id="nav-home">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <span>Home</span>
+            </a>
             <a href="#" class="active" id="nav-split">
                 <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
                 <span>Split Bill</span>
@@ -82,6 +86,64 @@
     <div id="coin-container"></div>
     
     <main class="container">
+        <!-- HOME VIEW -->
+        <section id="home-view" class="home-view hidden">
+            <div class="view-header-row">
+                <div class="view-title-group">
+                    <h1 class="view-title" id="home-greeting">Welcome back!</h1>
+                    <p class="view-subtitle">Here is your Bekantans squad overview.</p>
+                </div>
+            </div>
+
+            <div class="home-dashboard-grid">
+                <!-- My Debt Card (Dynamically injected) -->
+                <div id="home-my-debt-container" style="grid-column: 1 / -1;"></div>
+
+                <!-- Active Members -->
+                <div class="dashboard-card glass-card animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="card-header">
+                        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Active Members</h3>
+                    </div>
+                    <div id="home-active-members" class="home-members-list">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Split Bill Summary -->
+                <div class="dashboard-card glass-card animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="card-header">
+                        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Latest Split Bill</h3>
+                    </div>
+                    <div class="split-summary-info">
+                        <div class="stat-value" id="home-split-total">Rp 0</div>
+                        <div class="stat-label">Total Bill Amount</div>
+                    </div>
+                    <button class="primary-btn mt-4 full-btn" onclick="window.showView('split')">Manage Split Bill</button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="dashboard-card glass-card animate-fade-in" style="animation-delay: 0.3s;">
+                    <div class="card-header">
+                        <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> Squad Overview</h3>
+                    </div>
+                    <div class="quick-stats-row mt-2">
+                        <div class="stat-box-mini">
+                            <span class="q-label">Total Cash Fund</span>
+                            <span class="q-val" id="home-cash-total">Rp 0</span>
+                        </div>
+                        <div class="stat-box-mini">
+                            <span class="q-label">Destinations</span>
+                            <span class="q-val" id="home-trips-total">0</span>
+                        </div>
+                    </div>
+                    <div class="home-actions-row mt-4">
+                        <button class="action-btn-pill secondary" onclick="window.showView('cash')">View Cash Fund</button>
+                        <button class="action-btn-pill secondary" onclick="window.showView('travel')">View Journal</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- LANDING VIEW -->
         <section id="landing-view" class="landing-view">
             <div class="hero">
@@ -356,51 +418,106 @@
                 </div>
             </div>
         </div>
+
+        <!-- Edit Profile Modal -->
+        <div id="profile-modal-overlay" class="modal-overlay hidden">
+            <div class="modal glass-card">
+                <div class="modal-header">
+                    <h2>Edit Profile</h2>
+                </div>
+                <div class="modal-content" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="text-align: center; margin-bottom: 0.5rem;">
+                        <input type="file" id="edit-profile-photo-upload" accept="image/*" class="hidden" onchange="window.handleProfilePhotoUpload(event)">
+                        <div style="position: relative; display: inline-block; cursor: pointer; margin: 0 auto;" onclick="window.toggleEditPhotoMenu(event)">
+                            <div id="edit-profile-photo-preview" class="profile-avatar large-avatar" style="width: 90px; height: 90px; transition: transform 0.2s; font-size: 2.5rem;" title="Tap to change photo">
+                                <!-- content dynamically populated -->
+                            </div>
+                            <div class="edit-photo-icon" style="position: absolute; bottom: 0px; right: 0px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); border-radius: 50%; padding: 8px; border: 1px solid rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: background 0.2s, transform 0.2s; z-index: 20;" onmouseover="this.style.background='rgba(99, 102, 241, 0.9)'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.7)'; this.style.transform='scale(1)';">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            </div>
+                            <div id="edit-photo-options-menu" class="hidden" style="position: absolute; top: 95px; left: 50%; transform: translateX(-50%); background: rgba(20,20,30,0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.5rem; z-index: 50; display: flex; flex-direction: column; gap: 0.2rem; min-width: 150px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: left;">
+                                <button onclick="document.getElementById('edit-profile-photo-upload').click(); window.toggleEditPhotoMenu();" style="background: transparent; color: white; border: none; padding: 0.6rem 1rem; text-align: left; font-size: 0.85rem; cursor: pointer; border-radius: 8px; width: 100%; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Select from Album</button>
+                                <button id="edit-remove-photo-btn" onclick="window.removeEditProfilePhoto(); window.toggleEditPhotoMenu();" style="background: transparent; color: #ef4444; border: none; padding: 0.6rem 1rem; text-align: left; font-size: 0.85rem; cursor: pointer; border-radius: 8px; width: 100%; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">Remove Photo</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Username</label>
+                        <input type="text" id="edit-profile-username" placeholder="Username..." style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-top: 0.4rem;">
+                    </div>
+                    <div>
+                        <label style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">New Password (Optional)</label>
+                        <input type="password" id="edit-profile-password" placeholder="Leave blank to keep current..." style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-top: 0.4rem;">
+                    </div>
+                    <div>
+                        <label style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Confirm New Password</label>
+                        <input type="password" id="edit-profile-confirm-password" placeholder="Type new password again..." style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; margin-top: 0.4rem;">
+                    </div>
+                    <div style="margin-top: 0.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <label style="color: rgba(255,255,255,0.7); font-size: 0.85rem; display: block; margin-bottom: 0.8rem;">Avatar Border Theme</label>
+                        <div id="border-theme-selector" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem;">
+                            <!-- Generated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="document.getElementById('profile-modal-overlay').classList.add('hidden')">Cancel</button>
+                    <button class="btn-primary" onclick="window.saveProfileEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
         <!-- PROFILE VIEW -->
         <section id="profile-view" class="profile-view hidden">
             <div class="profile-card-container animate-fade-in">
                 <div class="profile-card glass-card">
+                    <!-- Edit Profile Button Absolute Top Right -->
+                    <button class="action-btn-pill" onclick="window.openProfileEdit()" style="position: absolute; top: 1.2rem; right: 1.2rem; z-index: 15; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.4rem; display: inline-block; vertical-align: middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        Edit Profile
+                    </button>
+                    
                     <div class="profile-banner"></div>
                     <div class="profile-content">
-                        <div class="profile-avatar-wrapper">
-                            <div class="profile-avatar large-avatar">D</div>
-                            <div class="status-indicator"></div>
-                        </div>
+                        <div class="profile-layout-grid">
+                            <!-- Left Column -->
+                            <div class="profile-left-col">
+                                <input type="file" id="direct-photo-upload" accept="image/*" class="hidden" onchange="window.handleDirectPhotoUpload(event)">
+                                <div class="profile-avatar-wrapper" style="cursor: pointer;" onclick="window.togglePhotoMenu(event)">
+                                    <div id="profile-avatar" class="profile-avatar large-avatar" style="transition: transform 0.2s;">D</div>
+                                    <div class="edit-photo-icon" style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); border-radius: 50%; padding: 8px; border: 1px solid rgba(255,255,255,0.3); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: background 0.2s, transform 0.2s; z-index: 20;" onmouseover="this.style.background='rgba(99, 102, 241, 0.9)'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.7)'; this.style.transform='scale(1)';">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                                    </div>
+                                    <div id="photo-options-menu" class="hidden" style="position: absolute; top: 110px; left: 50%; transform: translateX(-50%); background: rgba(20,20,30,0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.5rem; z-index: 50; display: flex; flex-direction: column; gap: 0.2rem; min-width: 150px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                                        <button onclick="document.getElementById('direct-photo-upload').click();" style="background: transparent; color: white; border: none; padding: 0.6rem 1rem; text-align: left; font-size: 0.85rem; cursor: pointer; border-radius: 8px; width: 100%; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Select from Album</button>
+                                        <button onclick="window.removeProfilePhoto();" style="background: transparent; color: #ef4444; border: none; padding: 0.6rem 1rem; text-align: left; font-size: 0.85rem; cursor: pointer; border-radius: 8px; width: 100%; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='transparent'">Remove Photo</button>
+                                    </div>
+                                </div>
                         
                         <div class="profile-main-info">
                             <h2 id="profile-username">User Name</h2>
-                            <p class="profile-handle">@bekantans_member</p>
-                            <div class="profile-badges">
+                            <div class="profile-badges" id="profile-badges-container">
                                 <span class="badge-pill">Premium Member</span>
-                                <span class="badge-pill">Journalist</span>
                             </div>
                         </div>
+                        </div>
 
-                        <div class="profile-stats">
+                        <!-- Right Column -->
+                        <div class="profile-right-col">
+                            <div class="profile-stats">
                             <div class="stat-box">
-                                <span class="stat-value">12</span>
+                                <span id="profile-trips" class="stat-value">0</span>
                                 <span class="stat-label">Trips</span>
                             </div>
+
                             <div class="stat-box">
-                                <span class="stat-value">48</span>
-                                <span class="stat-label">Photos</span>
-                            </div>
-                            <div class="stat-box">
-                                <span class="stat-value">2.4M</span>
+                                <span id="profile-spent" class="stat-value">0</span>
                                 <span class="stat-label">Spent</span>
                             </div>
                         </div>
 
                         <div class="profile-details-grid">
-                            <div class="detail-card">
-                                <div class="detail-icon">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                </div>
-                                <div class="detail-text">
-                                    <label>Role</label>
-                                    <span>Bekantans Squad</span>
-                                </div>
-                            </div>
+
                             <div class="detail-card">
                                 <div class="detail-icon">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -411,20 +528,23 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="profile-actions-modern">
-                            <button class="action-btn back-btn" onclick="window.showView('travel')">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                                <span>Go Back</span>
-                            </button>
-                            <button class="action-btn logout-btn-modern" onclick="window.handleLogout()">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                <span>Sign Out</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
+
+        <!-- User Trips Section -->
+        <div class="profile-trips-container animate-fade-in" style="width: 100%; max-width: 950px; margin: 2rem auto 0; animation-delay: 0.2s;">
+            <h3 style="color: white; font-size: 1.4rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; font-weight: 800;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary);"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                My Adventures
+            </h3>
+            <div class="destination-grid" id="profile-trips-grid" style="margin-bottom: 2rem;">
+                <!-- Populated via script.js -->
+            </div>
+        </div>
+
         </section>
     </main>
 

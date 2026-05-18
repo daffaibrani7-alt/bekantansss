@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
             items: window.items,
             cashData: window.cashData,
             travelData: sanitizedTravelData,
-            wheelParticipants: window.wheelParticipants
+            wheelParticipants: window.wheelParticipants,
+            userProfiles: window.userProfiles
         };
         
         // Save to Firebase (Main Metadata)
@@ -101,12 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const data = JSON.parse(cachedData);
             window.people = (data.people && data.people.length > 0) ? data.people : [...DEFAULT_PEOPLE];
-            window.items = (data.items && data.items.length > 0) ? data.items : [
+            window.items = (data.items && data.items.length > 0) ? data.items.map(i => ({...i, assignees: i.assignees || []})) : [
                 { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
                 { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
                 { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
             ];
             window.cashData = data.cashData || {};
+            window.userProfiles = data.userProfiles || null; // Will fallback later if needed
+            
             
             // Clean up travelData from cache (remove blob URLs)
             window.travelData = (data.travelData || []).map(dest => ({
@@ -149,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const travelDetailsView = document.getElementById('travel-details-view');
     const splitResultsView = document.getElementById('split-results-view');
     const fullResultsGrid = document.getElementById('full-results-grid');
+    const navHome = document.getElementById('nav-home');
     const navSplit = document.getElementById('nav-split');
     const navCash = document.getElementById('nav-cash');
     const navTravel = document.getElementById('nav-travel');
@@ -159,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const coinContainer = document.getElementById('coin-container');
     const loginView = document.getElementById('login-view');
     const navbar = document.querySelector('.navbar');
+    const homeView = document.getElementById('home-view');
 
     // --- Navigation & Core Helpers ---
     window.showView = function(viewName) {
@@ -167,18 +172,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionStorage.getItem(AUTH_KEY) !== 'true') {
             if (loginView) loginView.classList.remove('hidden');
             if (navbar) navbar.classList.add('hidden');
-            [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, document.getElementById('profile-view')].forEach(v => v?.classList.add('hidden'));
+            [homeView, landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, document.getElementById('profile-view')].forEach(v => v?.classList.add('hidden'));
             return;
         }
 
         const profileView = document.getElementById('profile-view');
-        [landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, profileView].forEach(v => v?.classList.add('hidden'));
-        [navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
+        [homeView, landingView, mainView, cashView, travelView, travelDetailsView, splitResultsView, spinWheelView, profileView].forEach(v => v?.classList.add('hidden'));
+        [navHome, navSplit, navCash, navTravel, navWheel].forEach(n => n?.classList.remove('active'));
         document.body.classList.remove('cash-fund-active');
         document.body.classList.remove('travel-journal-active');
         document.body.classList.remove('spin-wheel-active');
+        document.body.classList.remove('profile-active');
 
-        if (viewName === 'split') {
+        if (viewName === 'home') {
+            if (homeView) homeView.classList.remove('hidden');
+            if (navHome) navHome.classList.add('active');
+            if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
+        } else if (viewName === 'split') {
             mainView.classList.remove('hidden');
             navSplit.classList.add('active');
             if (typeof renderPeople === 'function') renderPeople();
@@ -208,16 +218,105 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (viewName === 'profile') {
             if (profileView) {
                 profileView.classList.remove('hidden');
+                document.body.classList.add('profile-active');
                 const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
+                const profileData = (window.userProfiles && window.userProfiles[currentUser]) ? window.userProfiles[currentUser] : { title: 'Bekantans Squad', photo: currentUser.charAt(0).toUpperCase() };
+                
                 document.getElementById('profile-username').textContent = currentUser;
+                const handleEl = document.querySelector('.profile-handle');
+                if (handleEl) handleEl.textContent = '@' + currentUser.toLowerCase().replace(/\s+/g, '') + '_member';
+                
+                const titleBadge = document.getElementById('profile-title-badge');
+                if (titleBadge) titleBadge.textContent = profileData.title;
+
                 const largeAvatar = profileView.querySelector('.large-avatar');
-                if (largeAvatar) largeAvatar.textContent = currentUser.charAt(0).toUpperCase();
+                if (largeAvatar) {
+                    largeAvatar.className = 'profile-avatar large-avatar'; // Reset classes
+                    if (profileData.photo && profileData.photo.length > 3) {
+                        largeAvatar.innerHTML = `<img src="${profileData.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    } else {
+                        largeAvatar.innerHTML = profileData.photo || currentUser.charAt(0).toUpperCase();
+                    }
+                    if (profileData.borderTheme && profileData.borderTheme !== 'none') {
+                        largeAvatar.classList.add(`avatar-theme-${profileData.borderTheme}`);
+                    }
+                }
+
+                if (typeof updateNavAvatar === 'function') updateNavAvatar();
+
+                // Calculate and update stats
+                const trips = window.travelData ? window.travelData.length : 0;
+                const photos = window.travelData ? window.travelData.reduce((sum, dest) => sum + (dest.album ? dest.album.length : 0), 0) : 0;
+                const totalSpent = window.travelData ? window.travelData.filter(d => !d.isWishlist).reduce((sum, dest) => sum + (Number(dest.cost) || 0), 0) : 0;
+                
+                const formatShortNumber = (num) => {
+                    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+                    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+                    return num.toString();
+                };
+
+                const elTrips = document.getElementById('profile-trips');
+                const elPhotos = document.getElementById('profile-photos');
+                const elSpent = document.getElementById('profile-spent');
+                
+                if (elTrips) elTrips.textContent = trips;
+                if (elPhotos) elPhotos.textContent = photos;
+                if (elSpent) elSpent.textContent = 'Rp ' + formatShortNumber(totalSpent);
+
+                // Render Profile Trips Grid
+                const profileTripsGrid = document.getElementById('profile-trips-grid');
+                if (profileTripsGrid) {
+                    const sortedTrips = (window.travelData || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+                    let html = '';
+                    sortedTrips.forEach(dest => {
+                        const dateBadge = typeof formatDate === 'function' ? formatDate(dest.date, 'badge') : {day: '', month: '', year: ''};
+                        html += `
+                            <div class="destination-card glass-card" onclick="window.showView('travel'); window.viewDestination(event, ${dest.id});">
+                                <div class="dest-image" style="background-image: url('${dest.image}')">
+                                    ${dest.isWishlist ? `
+                                        <div class="wishlist-badge">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                            Wishlist
+                                        </div>
+                                    ` : ''}
+                                    <div class="dest-date-premium">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        <span class="dd-day">${dateBadge.day}</span>
+                                        <span class="dd-month">${dateBadge.month}</span>
+                                        <span class="dd-year">${dateBadge.year}</span>
+                                    </div>
+                                </div>
+                                <div class="dest-info">
+                                    <div class="dest-meta-header">
+                                        <div class="dest-meta-row">
+                                            <div class="dest-location">
+                                                <div class="meta-icon-box">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                                </div>
+                                                <span>${dest.location}</span>
+                                            </div>
+                                            <div class="dest-duration">
+                                                <div class="meta-icon-box">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                </div>
+                                                <span>${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
+                                            </div>
+                                        </div>
+                                        <h3 class="dest-name">${dest.name}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    profileTripsGrid.innerHTML = html || `<div class="empty-state" style="grid-column: 1 / -1;">No trips found yet. Start planning!</div>`;
+                }
             }
         }
     }
 
     // Attach Click Handlers early (AFTER showView is defined)
-    if (navLogo) navLogo.onclick = () => window.showView('landing');
+    if (navLogo) navLogo.onclick = () => window.showView('home');
+    if (navHome) navHome.onclick = (e) => { e.preventDefault(); window.showView('home'); };
     if (navSplit) navSplit.onclick = (e) => { e.preventDefault(); window.showView('split'); };
     if (navCash) navCash.onclick = (e) => { e.preventDefault(); window.showView('cash'); };
     if (navTravel) navTravel.onclick = (e) => { e.preventDefault(); window.showView('travel'); };
@@ -238,26 +337,57 @@ document.addEventListener('DOMContentLoaded', () => {
         { user: 'bekantans', pass: 'trip2026' } // Keep the admin one for backup
     ];
 
+    function getDefaultProfiles() {
+        const p = {};
+        VALID_ACCOUNTS.forEach(acc => {
+            p[acc.user] = {
+                username: acc.user,
+                password: acc.pass,
+                title: 'Bekantans Squad',
+                photo: acc.user.charAt(0).toUpperCase()
+            };
+        });
+        return p;
+    }
+
+    if (!window.userProfiles) window.userProfiles = getDefaultProfiles();
+
     window.handleLogin = () => {
         const userInput = document.getElementById('login-username').value;
         const passInput = document.getElementById('login-password').value;
         const errorMsg = document.getElementById('login-error');
 
-        const account = VALID_ACCOUNTS.find(acc => 
-            acc.user.toLowerCase() === userInput.toLowerCase() && acc.pass === passInput
+        let profile = Object.values(window.userProfiles || {}).find(acc => 
+            acc.username.toLowerCase() === userInput.toLowerCase() && acc.password === passInput
         );
 
-        if (account) {
+        if (!profile) {
+            // Fallback for hardcoded admin or unregistered missing profiles
+            const fallback = VALID_ACCOUNTS.find(acc => acc.user.toLowerCase() === userInput.toLowerCase() && acc.pass === passInput);
+            if (fallback) {
+                profile = { username: fallback.user, password: fallback.pass, title: 'Bekantans Squad', photo: fallback.user.charAt(0).toUpperCase() };
+                window.userProfiles[profile.username] = profile;
+                saveState();
+            }
+        }
+
+        if (profile) {
             sessionStorage.setItem(AUTH_KEY, 'true');
-            sessionStorage.setItem(USER_KEY, account.user);
+            sessionStorage.setItem(USER_KEY, profile.username);
             loginView.classList.add('hidden');
             navbar.classList.remove('hidden');
             
             // Update Avatar Initial
             const navAvatar = document.querySelector('.nav-avatar');
-            if (navAvatar) navAvatar.textContent = account.user.charAt(0).toUpperCase();
+            if (navAvatar) {
+                if (profile.photo && profile.photo.length > 3) {
+                    navAvatar.innerHTML = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    navAvatar.innerHTML = profile.photo || profile.username.charAt(0).toUpperCase();
+                }
+            }
 
-            showView('travel');
+            showView('home');
             
             // Re-render to ensure data is visible
             renderTravelJournal();
@@ -278,13 +408,37 @@ document.addEventListener('DOMContentLoaded', () => {
             const navAvatar = document.querySelector('.nav-avatar');
             if (navAvatar) navAvatar.textContent = loggedInUser.charAt(0).toUpperCase();
         }
-        showView('travel');
+        showView('home');
     } else {
         if (loginView) loginView.classList.remove('hidden');
         if (navbar) navbar.classList.add('hidden');
         // Prevent seeing other views while not logged in
         document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
     }
+
+    window.updateNavAvatar = () => {
+        const currentUser = sessionStorage.getItem(USER_KEY);
+        if (!currentUser) return;
+        const navAvatars = document.querySelectorAll('.nav-avatar');
+        navAvatars.forEach(el => {
+            el.className = 'nav-avatar'; // reset classes
+            if (window.userProfiles && window.userProfiles[currentUser]) {
+                const profile = window.userProfiles[currentUser];
+                if (profile.photo && profile.photo.length > 3) {
+                    el.innerHTML = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    el.style.background = 'transparent';
+                } else {
+                    el.innerHTML = currentUser.charAt(0).toUpperCase();
+                    el.style.background = ''; // reset to default css
+                }
+                if (profile.borderTheme && profile.borderTheme !== 'none') {
+                    el.classList.add(`avatar-theme-${profile.borderTheme}`);
+                }
+            } else {
+                el.innerHTML = currentUser.charAt(0).toUpperCase();
+            }
+        });
+    };
 
     window.handleLogout = () => {
         sessionStorage.removeItem(AUTH_KEY);
@@ -433,8 +587,149 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const directAddItemBtn = document.getElementById('direct-add-item');
+    if (directAddItemBtn) {
+        directAddItemBtn.onclick = () => {
+            const nameInput = document.getElementById('direct-item-name');
+            const priceInput = document.getElementById('direct-item-price');
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+
+            if (name && !isNaN(price) && price > 0) {
+                const newItem = {
+                    id: Date.now(),
+                    name: name,
+                    price: price,
+                    assignees: [] // No one assigned by default
+                };
+                window.items.push(newItem);
+                
+                // Clear inputs
+                nameInput.value = '';
+                priceInput.value = '';
+                
+                // Update state and render
+                saveState();
+                if (typeof window.renderItems === 'function') window.renderItems();
+                if (typeof window.calculate === 'function') window.calculate('inline');
+            } else {
+                alert('Please enter a valid item name and price.');
+            }
+        };
+    }
+
 
     // --- Core Functions ---
+    window.renderHomeDashboard = function() {
+        const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
+        const greetingEl = document.getElementById('home-greeting');
+        if (greetingEl) {
+            greetingEl.textContent = `Welcome back, ${currentUser}!`;
+        }
+
+        // My Debt Card
+        const myDebtContainer = document.getElementById('home-my-debt-container');
+        if (myDebtContainer && window.items && window.people) {
+            const me = window.people.find(p => p.name.toLowerCase() === currentUser.toLowerCase());
+            let myDebt = 0;
+            let myItemsHtml = '';
+            if (me) {
+                window.items.forEach(item => {
+                    if (item.assignees && item.assignees.includes(me.id)) {
+                        const share = item.price / item.assignees.length;
+                        myDebt += share;
+                        myItemsHtml += `
+                            <div style="display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="color: white; font-weight: 500;">${item.name}</span>
+                                <span style="font-weight: 700; color: #fca5a5;">${formatRupiah(share)}</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            if (myDebt > 0) {
+                myDebtContainer.innerHTML = `
+                    <div class="dashboard-card glass-card animate-fade-in" style="background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(185, 28, 28, 0.2)); border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h3 style="color: #fca5a5; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    Action Required
+                                </h3>
+                                <div style="font-size: 1.8rem; font-weight: 900; color: white;">You owe ${formatRupiah(myDebt)}</div>
+                            </div>
+                            <div style="display: flex; gap: 0.8rem;">
+                                <button class="action-btn-pill" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2);" onclick="document.getElementById('my-debt-details').classList.toggle('hidden')">Details</button>
+                                <button class="action-btn-pill" style="background: #ef4444; color: white; border: none; font-weight: 800; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="alert('Payment integration coming soon!');">Pay Now</button>
+                            </div>
+                        </div>
+                        <div id="my-debt-details" class="hidden" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(239, 68, 68, 0.2);">
+                            <h4 style="margin-bottom: 0.5rem; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-transform: uppercase;">Bill Breakdown</h4>
+                            ${myItemsHtml}
+                        </div>
+                    </div>
+                `;
+            } else {
+                myDebtContainer.innerHTML = '';
+            }
+        }
+
+        // Active Members
+        const membersContainer = document.getElementById('home-active-members');
+        if (membersContainer && window.people) {
+            membersContainer.innerHTML = '';
+            window.people.forEach(person => {
+                const avatar = document.createElement('div');
+                avatar.className = 'participant-avatar';
+                avatar.title = person.name;
+
+                let photoHtml = `<span class="avatar-initial">${person.name.charAt(0).toUpperCase()}</span>`;
+                let bgStyle = `background: ${person.color || avatarColors[0]};`;
+
+                if (window.userProfiles && window.userProfiles[person.name]) {
+                    const profile = window.userProfiles[person.name];
+                    if (profile.photo && profile.photo.length > 3) {
+                        photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        bgStyle = `background: transparent;`;
+                    }
+                    if (profile.borderTheme && profile.borderTheme !== 'none') {
+                        avatar.classList.add(`avatar-theme-${profile.borderTheme}`);
+                    }
+                }
+
+                avatar.style = bgStyle;
+                avatar.innerHTML = photoHtml;
+                membersContainer.appendChild(avatar);
+            });
+        }
+
+        // Split Bill Latest Total
+        const splitTotalEl = document.getElementById('home-split-total');
+        if (splitTotalEl && window.items) {
+            const totalBill = window.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            splitTotalEl.textContent = formatRupiah(totalBill);
+        }
+
+        // Cash Fund Total
+        const cashTotalEl = document.getElementById('home-cash-total');
+        if (cashTotalEl && window.cashData) {
+            let totalCash = 0;
+            for (const monthKey in window.cashData) {
+                const mData = window.cashData[monthKey];
+                if (mData.collected) {
+                    totalCash += Object.values(mData.collected).reduce((a, b) => a + Number(b), 0);
+                }
+            }
+            cashTotalEl.textContent = formatRupiah(totalCash);
+        }
+
+        // Total Trips
+        const tripsTotalEl = document.getElementById('home-trips-total');
+        if (tripsTotalEl && window.travelData) {
+            tripsTotalEl.textContent = window.travelData.length;
+        }
+    };
     window.renderPeople = function() {
         if (!avatarsContainer) return;
         avatarsContainer.innerHTML = '';
@@ -445,9 +740,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatar = document.createElement('div');
             avatar.className = 'participant-avatar';
             avatar.dataset.name = person.name;
-            avatar.style.background = person.color || avatarColors[0];
+            
+            // Check if person has a profile photo
+            let photoHtml = `<span class="avatar-initial">${person.name.charAt(0).toUpperCase()}</span>`;
+            let bgStyle = `background: ${person.color || avatarColors[0]};`;
+            
+            if (window.userProfiles && window.userProfiles[person.name]) {
+                const profile = window.userProfiles[person.name];
+                if (profile.photo && profile.photo.length > 3) {
+                    photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    bgStyle = `background: transparent;`;
+                }
+                if (profile.borderTheme && profile.borderTheme !== 'none') {
+                    avatar.classList.add(`avatar-theme-${profile.borderTheme}`);
+                }
+            }
+            
+            avatar.style = bgStyle;
             avatar.innerHTML = `
-                <span class="avatar-initial">${person.name.charAt(0).toUpperCase()}</span>
+                ${photoHtml}
                 <button type="button" class="delete-avatar" data-id="${person.id}">×</button>
             `;
             avatarsContainer.appendChild(avatar);
@@ -1298,7 +1609,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="item-assign-tags">
                     ${window.people.map(person => {
-                        const isActive = item.assignees.includes(person.id);
+                        const assignees = item.assignees || [];
+                        const isActive = assignees.includes(person.id);
                         return `
                             <div class="assign-tag ${isActive ? 'active' : ''}" 
                                  data-item-id="${item.id}" data-person-id="${person.id}">
@@ -1318,9 +1630,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.people.forEach(p => personDetails[p.id] = { total: 0, items: [] });
 
         window.items.forEach(item => {
-            if (item.assignees.length > 0) {
-                const sharePrice = item.price / item.assignees.length; 
-                item.assignees.forEach(pId => {
+            const assignees = item.assignees || [];
+            if (assignees.length > 0) {
+                const sharePrice = item.price / assignees.length; 
+                assignees.forEach(pId => {
                     if (personDetails[pId]) {
                         personDetails[pId].total += sharePrice;
                         personDetails[pId].items.push({ name: item.name, price: sharePrice });
@@ -1337,11 +1650,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const details = personDetails[person.id];
                 if (!details || details.total === 0) return;
 
+                let photoHtml = person.name.charAt(0).toUpperCase();
+                let bgStyle = `background: ${person.color}`;
+
+                let themeClass = '';
+                if (window.userProfiles && window.userProfiles[person.name]) {
+                    const profile = window.userProfiles[person.name];
+                    if (profile.photo && profile.photo.length > 3) {
+                        photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        bgStyle = `background: transparent;`;
+                    }
+                    if (profile.borderTheme && profile.borderTheme !== 'none') {
+                        themeClass = ` avatar-theme-${profile.borderTheme}`;
+                    }
+                }
+
                 const card = document.createElement('div');
                 card.className = 'receipt-card glass-card';
                 card.innerHTML = `
                     <div class="receipt-header">
-                        <div class="receipt-avatar" style="background: ${person.color}">${person.name.charAt(0).toUpperCase()}</div>
+                        <div class="receipt-avatar${themeClass}" style="${bgStyle}">${photoHtml}</div>
                         <div class="receipt-header-info">
                             <span class="receipt-person-name">${person.name}</span>
                             <div class="receipt-total-row">
@@ -1418,9 +1746,25 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = `cash-person-card ${isPaid ? 'paid' : 'unpaid'}`;
             const initial = person.name.charAt(0).toUpperCase();
             
+            // Check if person has a profile photo
+            let photoHtml = initial;
+            let bgStyle = `background: ${person.color || avatarColors[0]};`;
+            
+            let themeClass = '';
+            if (window.userProfiles && window.userProfiles[person.name]) {
+                const profile = window.userProfiles[person.name];
+                if (profile.photo && profile.photo.length > 3) {
+                    photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    bgStyle = `background: transparent;`;
+                }
+                if (profile.borderTheme && profile.borderTheme !== 'none') {
+                    themeClass = ` avatar-theme-${profile.borderTheme}`;
+                }
+            }
+            
             card.innerHTML = `
                 <div class="cash-person-info">
-                    <div class="cash-avatar" style="background: ${person.color || avatarColors[0]}">${initial}</div>
+                    <div class="cash-avatar${themeClass}" style="${bgStyle}">${photoHtml}</div>
                     <div class="cash-details">
                         <span class="name">${person.name}</span>
                         <span class="status">${isPaid ? 'Paid' : 'Unpaid'}</span>
@@ -1723,6 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tag = e.target.closest('.assign-tag');
             const item = window.items.find(i => i.id === Number(tag.dataset.itemId));
             const pId = Number(tag.dataset.personId);
+            if (!item.assignees) item.assignees = [];
             const idx = item.assignees.indexOf(pId);
             if (idx > -1) item.assignees.splice(idx, 1);
             else item.assignees.push(pId);
@@ -2183,4 +2528,285 @@ document.addEventListener('DOMContentLoaded', () => {
             }, i * 100);
         }
     };
+
+    window.handleProfilePhotoUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 250;
+                const MAX_HEIGHT = 250;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                window.tempProfilePhotoBase64 = dataUrl;
+                
+                const previewEl = document.getElementById('edit-profile-photo-preview');
+                if (previewEl) {
+                    previewEl.innerHTML = `<img src="${dataUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        // Hide menu
+        const menu = document.getElementById('edit-photo-options-menu');
+        if (menu) menu.classList.add('hidden');
+        const removeBtn = document.getElementById('edit-remove-photo-btn');
+        if (removeBtn) removeBtn.style.display = 'block';
+    };
+
+    window.handleDirectPhotoUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser || !window.userProfiles || !window.userProfiles[currentUser]) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 250;
+                const MAX_HEIGHT = 250;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                window.userProfiles[currentUser].photo = dataUrl;
+                saveState();
+                showView('profile'); // Re-render to show immediately
+                window.refreshAllAvatars();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        // Hide menu after selecting
+        const menu = document.getElementById('photo-options-menu');
+        if (menu) menu.classList.add('hidden');
+    };
+
+    window.togglePhotoMenu = (event) => {
+        if (event) event.stopPropagation();
+        const menu = document.getElementById('photo-options-menu');
+        if (menu) menu.classList.toggle('hidden');
+    };
+
+    window.removeProfilePhoto = () => {
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser || !window.userProfiles || !window.userProfiles[currentUser]) return;
+        
+        // Reset photo to username initial
+        window.userProfiles[currentUser].photo = currentUser.charAt(0).toUpperCase();
+        saveState();
+        showView('profile');
+        window.refreshAllAvatars();
+        
+        const menu = document.getElementById('photo-options-menu');
+        if (menu) menu.classList.add('hidden');
+    };
+
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('photo-options-menu');
+        if (menu && !menu.classList.contains('hidden')) {
+            const wrapper = document.querySelector('.profile-avatar-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        }
+        
+        const editMenu = document.getElementById('edit-photo-options-menu');
+        if (editMenu && !editMenu.classList.contains('hidden')) {
+            const editWrapper = document.getElementById('edit-profile-photo-preview')?.parentElement;
+            if (editWrapper && !editWrapper.contains(e.target)) {
+                editMenu.classList.add('hidden');
+            }
+        }
+    });
+
+    window.toggleEditPhotoMenu = (event) => {
+        if (event) event.stopPropagation();
+        const menu = document.getElementById('edit-photo-options-menu');
+        if (menu) menu.classList.toggle('hidden');
+    };
+
+    window.removeEditProfilePhoto = () => {
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser) return;
+        
+        // Use initial letter
+        const initial = currentUser.charAt(0).toUpperCase();
+        window.tempProfilePhotoBase64 = initial;
+        
+        const previewEl = document.getElementById('edit-profile-photo-preview');
+        if (previewEl) {
+            previewEl.innerHTML = initial;
+        }
+        
+        const removeBtn = document.getElementById('edit-remove-photo-btn');
+        if (removeBtn) removeBtn.style.display = 'none';
+        
+        const menu = document.getElementById('edit-photo-options-menu');
+        if (menu) menu.classList.add('hidden');
+    };
+
+    window.refreshAllAvatars = () => {
+        if (typeof updateNavAvatar === 'function') updateNavAvatar();
+        if (typeof renderPeople === 'function') renderPeople();
+        if (typeof renderItems === 'function') renderItems();
+        if (typeof renderCashFund === 'function') renderCashFund();
+        if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
+    };
+
+    window.openProfileEdit = () => {
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser || !window.userProfiles || !window.userProfiles[currentUser]) return;
+        const profile = window.userProfiles[currentUser];
+
+        window.tempProfilePhotoBase64 = profile.photo || '';
+        const previewEl = document.getElementById('edit-profile-photo-preview');
+        if (previewEl) {
+            const hasPhoto = profile.photo && profile.photo.length > 3;
+            if (hasPhoto) {
+                previewEl.innerHTML = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                previewEl.innerHTML = profile.photo || profile.username.charAt(0).toUpperCase();
+            }
+            
+            const removeBtn = document.getElementById('edit-remove-photo-btn');
+            if (removeBtn) {
+                removeBtn.style.display = hasPhoto ? 'block' : 'none';
+            }
+        }
+        document.getElementById('edit-profile-username').value = profile.username;
+        document.getElementById('edit-profile-password').value = ''; // Don't show password
+        document.getElementById('edit-profile-confirm-password').value = ''; // Reset confirm password
+
+        // Border Theme Setup
+        window.tempProfileBorder = profile.borderTheme || 'none';
+        const borderSelector = document.getElementById('border-theme-selector');
+        if (borderSelector) {
+            const themes = [
+                { id: 'none', label: 'None' },
+                { id: 'space', label: 'Space' }
+            ];
+            
+            let html = '';
+            themes.forEach(theme => {
+                const isActive = window.tempProfileBorder === theme.id ? 'active' : '';
+                html += `
+                    <div class="border-theme-btn-wrapper" onclick="window.selectBorderTheme('${theme.id}')">
+                        <div class="border-theme-btn avatar-theme-${theme.id} ${isActive}" id="border-btn-${theme.id}"></div>
+                        <div class="border-theme-label">${theme.label}</div>
+                    </div>
+                `;
+            });
+            borderSelector.innerHTML = html;
+        }
+
+        document.getElementById('profile-modal-overlay').classList.remove('hidden');
+    };
+
+    window.selectBorderTheme = (themeId) => {
+        window.tempProfileBorder = themeId;
+        const buttons = document.querySelectorAll('.border-theme-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(`border-btn-${themeId}`);
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        // Preview on the edit modal avatar
+        const previewEl = document.getElementById('edit-profile-photo-preview');
+        if (previewEl) {
+            // Remove previous theme classes
+            previewEl.className = 'profile-avatar large-avatar';
+            previewEl.classList.add(`avatar-theme-${themeId}`);
+        }
+    };
+
+    window.saveProfileEdit = () => {
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser || !window.userProfiles || !window.userProfiles[currentUser]) return;
+
+        const photo = window.tempProfilePhotoBase64;
+        const newUsername = document.getElementById('edit-profile-username').value.trim();
+        const newPass = document.getElementById('edit-profile-password').value;
+        const confirmPass = document.getElementById('edit-profile-confirm-password').value;
+
+        if (!newUsername) {
+            alert('Username cannot be empty.');
+            return;
+        }
+
+        if (newPass && newPass !== confirmPass) {
+            alert('New passwords do not match! Please confirm your new password correctly.');
+            return;
+        }
+
+        const profile = window.userProfiles[currentUser];
+
+        // If username changes, we need to create a new key and delete the old
+        if (newUsername.toLowerCase() !== currentUser.toLowerCase()) {
+            // Check if username already taken by someone else
+            if (window.userProfiles[newUsername]) {
+                alert('Username already exists!');
+                return;
+            }
+            window.userProfiles[newUsername] = { ...profile, username: newUsername };
+            delete window.userProfiles[currentUser];
+            sessionStorage.setItem('bekantans_user', newUsername);
+        } else {
+            // Re-assign in case capitalization changed
+            window.userProfiles[newUsername] = profile;
+        }
+
+        const updatedProfile = window.userProfiles[newUsername];
+        updatedProfile.photo = photo || newUsername.charAt(0).toUpperCase();
+        updatedProfile.borderTheme = window.tempProfileBorder || 'none';
+        
+        if (newPass) {
+            updatedProfile.password = newPass;
+        }
+
+        document.getElementById('profile-modal-overlay').classList.add('hidden');
+        saveState();
+        showView('profile'); // Re-render profile view
+        window.refreshAllAvatars();
+    };
+
 });

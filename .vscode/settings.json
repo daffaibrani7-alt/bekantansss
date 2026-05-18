@@ -1,0 +1,15 @@
+{
+  "python.analysis.ignore": [
+    "**"
+  ],
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.extraPaths": [
+    "/Users/a/Library/Python/3.9/lib/python/site-packages"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportUndefinedVariable": "none"
+  }
+}

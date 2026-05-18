@@ -329,8 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { user: 'Rama', pass: 'Rama' },
         { user: 'Yusuf', pass: 'Yusuf' },
         { user: 'Krisna', pass: 'Krisna' },
-        { user: 'Pahotan', pass: 'Pahotan' },
-        { user: 'bekantans', pass: 'trip2026' } // Keep the admin one for backup
+        { user: 'Pahotan', pass: 'Pahotan' }
     ];
 
     function getDefaultProfiles() {
@@ -2748,7 +2747,31 @@ document.addEventListener('DOMContentLoaded', () => {
             window.people = (data.people && data.people.length > 0) ? data.people : window.people;
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
-            if (data.userProfiles) window.userProfiles = data.userProfiles;
+            
+            let stateCleaned = false;
+            if (data.userProfiles) {
+                window.userProfiles = data.userProfiles;
+                if (window.userProfiles['bekantans']) {
+                    delete window.userProfiles['bekantans'];
+                    stateCleaned = true;
+                }
+            }
+            
+            const hasBekantansInPeople = window.people.some(p => p.name === 'bekantans');
+            if (hasBekantansInPeople) {
+                const pId = window.people.find(p => p.name === 'bekantans')?.id;
+                window.people = window.people.filter(p => p.name !== 'bekantans');
+                window.items.forEach(item => {
+                    if (item.assignees && pId !== undefined) {
+                        item.assignees = item.assignees.filter(id => id !== pId);
+                    }
+                });
+                stateCleaned = true;
+            }
+            
+            if (stateCleaned) {
+                saveState();
+            }
             
             // Update travelData while preserving any locally loaded albums
             const remoteTravelData = data.travelData || [];

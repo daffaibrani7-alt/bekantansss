@@ -6368,3 +6368,101 @@ body.home-active::after {
     border-color: #6366f1 !important;
     box-shadow: 0 0 8px #6366f1;
 }
+
+/* Custom Interactive Assignee Detail Tooltip Dropdown */
+.details-assignee {
+    position: relative;
+    overflow: visible !important;
+}
+
+.assignee-detail-tooltip {
+    position: absolute;
+    bottom: 115%;
+    right: 0;
+    width: 240px;
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 100;
+    pointer-events: none;
+}
+
+.details-assignee:hover .assignee-detail-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.tooltip-header {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
+.tooltip-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.8rem;
+}
+
+.tooltip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Style the tooltip list scrollbar */
+.tooltip-list::-webkit-scrollbar {
+    width: 4px;
+}
+.tooltip-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+}
+.tooltip-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+.tooltip-user-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.tooltip-user-row:hover {
+    transform: translateX(3px);
+}
+
+.tooltip-avatar-container {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tooltip-user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: white;
+}

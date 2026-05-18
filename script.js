@@ -1366,9 +1366,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 });
                 
+                // Build interactive hover dropdown list for participants
+                const tooltipUsersHtml = displayAssignees.map(user => {
+                    const profile = window.userProfiles[user];
+                    let themeClass = '';
+                    if (profile.borderTheme && profile.borderTheme !== 'none') {
+                        themeClass = ` avatar-theme-${profile.borderTheme}`;
+                    }
+                    let photoHtml = '';
+                    if (profile.photo && profile.photo.length > 2) {
+                        photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    } else {
+                        const initial = profile.photo || user.charAt(0).toUpperCase();
+                        photoHtml = `<span style="font-weight: 700; font-size: 0.7rem; color: white;">${initial}</span>`;
+                    }
+                    return `
+                        <div class="tooltip-user-row">
+                            <div class="tooltip-avatar-container">
+                                <div class="profile-avatar ${themeClass}" style="width: 28px; height: 28px; font-size: 0.7rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative; border: 1.5px solid #0f0f19; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                                    ${photoHtml}
+                                </div>
+                            </div>
+                            <span class="tooltip-user-name">${profile.displayName || user}</span>
+                        </div>
+                    `;
+                }).join('');
+
                 assigneeHtml = `
-                    <div class="details-assignee animate-fade-in" style="display: flex; align-items: center; background: rgba(255,255,255,0.06); padding: 0.4rem 1rem 0.4rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 0.2rem; gap: 0.4rem;">
-                        <div style="display: flex; align-items: center; margin-left: 8px;">
+                    <div class="details-assignee animate-fade-in" style="display: flex; align-items: center; background: rgba(255,255,255,0.06); padding: 0.4rem 1rem 0.4rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 0.2rem; gap: 0.4rem; cursor: pointer;">
+                        <div style="display: flex; align-items: center; margin-left: 8px; overflow: visible !important;">
                             ${avatarsHtml}
                         </div>
                         <div style="display: flex; flex-direction: column; margin-left: 0.4rem; text-align: left;">
@@ -1376,6 +1402,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span style="font-size: 0.9rem; font-weight: 700; color: white; line-height: 1.1; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                 ${displayAssignees.join(', ')}
                             </span>
+                        </div>
+                        
+                        <!-- Premium Glassmorphic Hover List -->
+                        <div class="assignee-detail-tooltip">
+                            <div class="tooltip-header">Participants (${displayAssignees.length})</div>
+                            <div class="tooltip-divider"></div>
+                            <div class="tooltip-list">
+                                ${tooltipUsersHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1398,8 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span><div class="meta-icon-circle duration"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div> ${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
                             <span><div class="meta-icon-circle date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div> ${formatDate(dest.date)}</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;">
-                            ${assigneeHtml}
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.8rem;">
                             <div class="details-expense-badge">
                                 <div class="badge-icon">
                                     <span style="font-weight: 900; font-size: 1.2rem; letter-spacing: -0.5px;">Rp</span>
@@ -1409,6 +1443,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="badge-amount" style="font-size: 1.6rem; font-weight: 900; color: white; line-height: 1;">${formatRupiah(dest.cost)}</span>
                                 </div>
                             </div>
+                            ${assigneeHtml}
                         </div>
                     </div>
                 </div>

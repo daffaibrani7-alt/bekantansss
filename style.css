@@ -5088,14 +5088,27 @@ body.home-active::after {
     justify-content: center;
 }
 
-/* --- AVATAR BORDER THEMES --- */
-.avatar-theme-none { border: none !important; box-shadow: none !important; }
+/* Circular Profile Avatars & Fallbacks */
+.profile-avatar {
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+}
 
 /* Ensure avatar images render underneath all custom borders */
 .profile-avatar img, .participant-avatar img, .border-theme-btn img, .nav-avatar img {
     position: relative;
     z-index: 1;
+    border-radius: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
+
+/* --- AVATAR BORDER THEMES --- */
+.avatar-theme-none { border: none !important; box-shadow: none !important; }
 
 .avatar-theme-cat_white { border: none !important; box-shadow: none !important; position: relative; }
 .avatar-theme-cat_white::before {

@@ -259,13 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             photos += dest.album ? dest.album.length : 0;
                             
                             if (!dest.isWishlist) {
-                                if (assignees.length > 0) {
-                                    // Split cost among assigned travelers
-                                    totalSpent += (Number(dest.cost) || 0) / assignees.length;
-                                } else {
-                                    // Split cost among all group members for group trips
-                                    totalSpent += (Number(dest.cost) || 0) / totalPeopleCount;
-                                }
+                                totalSpent += Number(dest.cost) || 0;
                             }
                         }
                     });

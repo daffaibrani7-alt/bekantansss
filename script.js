@@ -38,10 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data State
     window.people = [...DEFAULT_PEOPLE];
     window.items = [
-        { id: 1, name: 'Indomie Banglades Biasa N Puding Telor', price: 33000, assignees: [] },
+        { id: 1, name: 'Indomie Banglades Bias N Puding Telor', price: 33000, assignees: [] },
         { id: 2, name: 'Indomie Banglades Biasa', price: 18000, assignees: [] },
         { id: 3, name: 'Mie Aceh Udang', price: 35000, assignees: [] }
     ];
+    window.billTitle = 'Trip Bill';
+    window.billPayerId = null;
     window.cashData = {};
     window.travelData = [];
     window.wheelParticipants = [];
@@ -62,7 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
             cashData: window.cashData,
             travelData: sanitizedTravelData,
             wheelParticipants: window.wheelParticipants,
-            userProfiles: window.userProfiles
+            userProfiles: window.userProfiles,
+            billTitle: window.billTitle || 'Trip Bill',
+            billPayerId: window.billPayerId !== undefined ? window.billPayerId : null
         };
         
         // Save to Firebase (Main Metadata)
@@ -109,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             window.cashData = data.cashData || {};
             window.userProfiles = data.userProfiles || null; // Will fallback later if needed
+            window.billTitle = data.billTitle || 'Trip Bill';
+            window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
             
             
             // Clean up travelData from cache (remove blob URLs)
@@ -612,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
                 if (typeof window.renderItems === 'function') window.renderItems();
                 if (typeof window.calculate === 'function') window.calculate('inline');
+                if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
             } else {
                 alert('Please enter a valid item name and price.');
             }
@@ -648,41 +655,136 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if (myDebt > 0) {
-                myDebtContainer.innerHTML = `
-                    <div class="dashboard-card glass-card animate-fade-in" style="background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(185, 28, 28, 0.2)); border: 1px solid rgba(239, 68, 68, 0.3);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                            <div>
-                                <h3 style="color: #fca5a5; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                                    Action Required
-                                </h3>
-                                <div style="font-size: 1.8rem; font-weight: 900; color: white;">You owe ${formatRupiah(myDebt)}</div>
-                            </div>
-                            <div style="display: flex; gap: 0.8rem;">
-                                <button class="action-btn-pill" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2);" onclick="document.getElementById('my-debt-details').classList.toggle('hidden')">Details</button>
-                                <button class="action-btn-pill" style="background: #ef4444; color: white; border: none; font-weight: 800; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="alert('Payment integration coming soon!');">Pay Now</button>
+            const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+            const payerName = payer ? payer.name : '';
+
+            if (window.billPayerId !== null && me && me.id === window.billPayerId) {
+                // Calculate how much others owe you
+                let totalOwedToMe = 0;
+                window.people.forEach(p => {
+                    if (p.id !== me.id) {
+                        window.items.forEach(item => {
+                            if (item.assignees && item.assignees.includes(p.id)) {
+                                totalOwedToMe += item.price / item.assignees.length;
+                            }
+                        });
+                    }
+                });
+
+                if (totalOwedToMe > 0) {
+                    const billName = window.billTitle || 'Trip Bill';
+                    myDebtContainer.innerHTML = `
+                        <div class="home-debt-alert-card animate-fade-in" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.02)); border-color: rgba(16, 185, 129, 0.2);">
+                            <div class="debt-card-glow" style="background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.15), transparent 70%);"></div>
+                            <div class="debt-card-inner">
+                                <div class="debt-alert-left">
+                                    <div class="debt-icon-container" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25); color: #34d399;">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    </div>
+                                    <div class="debt-meta">
+                                        <span class="debt-alert-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">YOU PAID THIS BILL</span>
+                                        <h2 class="debt-alert-title">Squad owes you <span class="debt-alert-amount" style="color: #34d399;">${formatRupiah(totalOwedToMe)}</span> for <span style="color: white; font-weight: 700;">${billName}</span></h2>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div id="my-debt-details" class="hidden" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(239, 68, 68, 0.2);">
-                            <h4 style="margin-bottom: 0.5rem; color: rgba(255,255,255,0.7); font-size: 0.85rem; text-transform: uppercase;">Bill Breakdown</h4>
-                            ${myItemsHtml}
+                    `;
+                } else {
+                    myDebtContainer.innerHTML = `
+                        <div class="home-no-debt-card animate-fade-in">
+                            <div class="no-debt-inner">
+                                <span class="no-debt-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </span>
+                                <div class="no-debt-meta">
+                                    <h3>You are all settled!</h3>
+                                    <p>No active debts in the squad.</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             } else {
-                myDebtContainer.innerHTML = '';
+                if (myDebt > 0) {
+                    const actionTagText = payer ? `OWED TO ${payerName.toUpperCase()}` : `ACTION REQUIRED`;
+                    const titleText = payer ? `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span> to ${payerName}` : `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span>`;
+                    
+                    myDebtContainer.innerHTML = `
+                        <div class="home-debt-alert-card animate-fade-in">
+                            <div class="debt-card-glow"></div>
+                            <div class="debt-card-inner">
+                                <div class="debt-alert-left">
+                                    <div class="debt-icon-container">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    </div>
+                                    <div class="debt-meta">
+                                        <span class="debt-alert-tag">${actionTagText}</span>
+                                        <h2 class="debt-alert-title">${titleText}</h2>
+                                    </div>
+                                </div>
+                                <div class="debt-alert-actions">
+                                    <button class="primary-btn small-btn glass-btn" onclick="document.getElementById('my-debt-details').classList.toggle('hidden')">Breakdown</button>
+                                    <button class="primary-btn small-btn pay-gradient-btn" onclick="alert('Payment integration coming soon!');">Pay Now</button>
+                                </div>
+                            </div>
+                            <div id="my-debt-details" class="hidden my-debt-details-container">
+                                <h4 class="breakdown-title">Bill Breakdown</h4>
+                                <div class="breakdown-list">
+                                    ${myItemsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    myDebtContainer.innerHTML = `
+                        <div class="home-no-debt-card animate-fade-in">
+                            <div class="no-debt-inner">
+                                <span class="no-debt-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </span>
+                                <div class="no-debt-meta">
+                                    <h3>You are all settled!</h3>
+                                    <p>No active debts in the squad.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         }
 
-        // Active Members
+        // Active Members (Upgraded Squad Roster with exact debts/settled indicators)
         const membersContainer = document.getElementById('home-active-members');
         if (membersContainer && window.people) {
             membersContainer.innerHTML = '';
+            
+            const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+
             window.people.forEach(person => {
+                // Calculate their specific share
+                let personShare = 0;
+                if (window.items) {
+                    window.items.forEach(item => {
+                        if (item.assignees && item.assignees.includes(person.id)) {
+                            personShare += item.price / item.assignees.length;
+                        }
+                    });
+                }
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'home-member-row-premium';
+                
+                const leftSide = document.createElement('div');
+                leftSide.className = 'home-member-left';
+
                 const avatar = document.createElement('div');
                 avatar.className = 'participant-avatar';
-                avatar.title = person.name;
 
                 let photoHtml = `<span class="avatar-initial">${person.name.charAt(0).toUpperCase()}</span>`;
                 let bgStyle = `background: ${person.color || avatarColors[0]};`;
@@ -700,15 +802,175 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 avatar.style = bgStyle;
                 avatar.innerHTML = photoHtml;
-                membersContainer.appendChild(avatar);
+                
+                const meta = document.createElement('div');
+                meta.className = 'home-member-meta';
+                
+                const nameLabel = document.createElement('span');
+                nameLabel.className = 'home-member-name-bold';
+                nameLabel.textContent = person.name;
+                
+                const roleLabel = document.createElement('span');
+                roleLabel.className = 'home-member-role';
+                roleLabel.textContent = person.name.toLowerCase() === currentUser.toLowerCase() ? 'You (Organizer)' : 'Squad Member';
+
+                meta.appendChild(nameLabel);
+                meta.appendChild(roleLabel);
+                
+                leftSide.appendChild(avatar);
+                leftSide.appendChild(meta);
+
+                // Right side status badge
+                const statusBadge = document.createElement('div');
+                if (payer) {
+                    if (person.id === payer.id) {
+                        // Calculate total owed to payer
+                        let totalOwedToPayer = 0;
+                        window.people.forEach(p => {
+                            if (p.id !== payer.id) {
+                                window.items.forEach(item => {
+                                    if (item.assignees && item.assignees.includes(p.id)) {
+                                        totalOwedToPayer += item.price / item.assignees.length;
+                                    }
+                                });
+                            }
+                        });
+                        statusBadge.className = 'home-member-status-badge settled-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Paid Bill (Owed ${formatRupiah(totalOwedToPayer)})`;
+                    } else if (personShare > 0) {
+                        statusBadge.className = 'home-member-status-badge debt-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)} to ${payer.name}`;
+                    } else {
+                        statusBadge.className = 'home-member-status-badge settled-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
+                    }
+                } else {
+                    if (personShare > 0) {
+                        statusBadge.className = 'home-member-status-badge debt-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)}`;
+                    } else {
+                        statusBadge.className = 'home-member-status-badge settled-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
+                    }
+                }
+
+                wrapper.appendChild(leftSide);
+                wrapper.appendChild(statusBadge);
+                membersContainer.appendChild(wrapper);
             });
+            
+            // Update Squad count
+            const squadCountEl = document.getElementById('home-squad-count');
+            if (squadCountEl) {
+                squadCountEl.textContent = `${window.people.length} Members`;
+            }
         }
 
-        // Split Bill Latest Total
+        // Split Bill Latest Total & Live Transactions Ledger
         const splitTotalEl = document.getElementById('home-split-total');
         if (splitTotalEl && window.items) {
             const totalBill = window.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
             splitTotalEl.textContent = formatRupiah(totalBill);
+            
+            // Dynamically show bill title on ledger card
+            window.syncBillMetadataUI();
+        }
+
+        // Render dynamic transaction ledger list
+        const ledgerListEl = document.getElementById('home-ledger-transactions');
+        if (ledgerListEl && window.items) {
+            ledgerListEl.innerHTML = '';
+            
+            // Get last 3 items in reverse order (newest first)
+            const lastItems = [...window.items].slice(-3).reverse();
+            
+            if (lastItems.length === 0) {
+                ledgerListEl.innerHTML = `
+                    <div class="no-transactions-placeholder">
+                        <span>No transactions recorded yet</span>
+                    </div>
+                `;
+            } else {
+                lastItems.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'ledger-transaction-row';
+                    
+                    // Determine beautiful outline SVG based on name keywords
+                    let icon = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <!-- Letter R -->
+                            <path d="M4 6v12"></path>
+                            <path d="M4 6h5a3 3 0 0 1 0 6H4"></path>
+                            <path d="M8 12l4 6"></path>
+                            <!-- Letter p -->
+                            <path d="M15 10v8"></path>
+                            <path d="M15 10h4a2.5 2.5 0 0 1 0 5h-4"></path>
+                        </svg>`;
+                    const nameLower = item.name.toLowerCase();
+                    if (nameLower.includes('mie') || nameLower.includes('indomie') || nameLower.includes('food') || nameLower.includes('makan') || nameLower.includes('telor') || nameLower.includes('udang')) {
+                        icon = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2c1.66 0 3 1.34 3 3v7H9V5c0-1.66 1.34-3 3-3z"></path>
+                                <path d="M5 12h14v2a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-2z"></path>
+                                <path d="M12 18v4M9 22h6"></path>
+                            </svg>`;
+                    } else if (nameLower.includes('minum') || nameLower.includes('kopi') || nameLower.includes('drink') || nameLower.includes('coffee') || nameLower.includes('puding')) {
+                        icon = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                <line x1="6" y1="2" x2="6" y2="4"></line>
+                                <line x1="10" y1="2" x2="10" y2="4"></line>
+                                <line x1="14" y1="2" x2="14" y2="4"></line>
+                            </svg>`;
+                    } else if (nameLower.includes('hotel') || nameLower.includes('lodging') || nameLower.includes('penginapan') || nameLower.includes('stay')) {
+                        icon = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>`;
+                    } else if (nameLower.includes('bensin') || nameLower.includes('travel') || nameLower.includes('tiket') || nameLower.includes('ticket') || nameLower.includes('grab') || nameLower.includes('gojek') || nameLower.includes('adventure')) {
+                        icon = `
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
+                            </svg>`;
+                    }
+                    
+                    const leftPart = document.createElement('div');
+                    leftPart.className = 'transaction-left';
+                    
+                    const iconBox = document.createElement('div');
+                    iconBox.className = 'transaction-icon';
+                    iconBox.innerHTML = icon;
+                    
+                    const meta = document.createElement('div');
+                    meta.className = 'transaction-meta';
+                    
+                    const nameLabel = document.createElement('span');
+                    nameLabel.className = 'transaction-name';
+                    nameLabel.textContent = item.name;
+                    
+                    const assigneesLabel = document.createElement('span');
+                    assigneesLabel.className = 'transaction-assignees';
+                    const splitCount = item.assignees ? item.assignees.length : 0;
+                    assigneesLabel.textContent = splitCount > 0 ? `Split with ${splitCount} people` : `Unassigned`;
+                    
+                    meta.appendChild(nameLabel);
+                    meta.appendChild(assigneesLabel);
+                    leftPart.appendChild(iconBox);
+                    leftPart.appendChild(meta);
+                    
+                    const rightPart = document.createElement('div');
+                    rightPart.className = 'transaction-right';
+                    rightPart.textContent = formatRupiah(item.price);
+                    
+                    row.appendChild(leftPart);
+                    row.appendChild(rightPart);
+                    ledgerListEl.appendChild(row);
+                });
+            }
         }
 
         // Cash Fund Total
@@ -730,6 +992,87 @@ document.addEventListener('DOMContentLoaded', () => {
             tripsTotalEl.textContent = window.travelData.length;
         }
     };
+    window.syncBillMetadataUI = function() {
+        const titleInput = document.getElementById('bill-title-input');
+        if (titleInput) {
+            // Only update input value if the user is NOT actively typing in it
+            if (document.activeElement !== titleInput) {
+                titleInput.value = window.billTitle !== undefined ? window.billTitle : 'Trip Bill';
+            }
+            if (!titleInput.oninput) {
+                titleInput.oninput = () => {
+                    window.billTitle = titleInput.value; // Preserve spaces and empty states while typing
+                    saveState();
+                    if (typeof window.renderHomeDashboard === 'function') {
+                        window.renderHomeDashboard();
+                    }
+                };
+            }
+        }
+
+        // Custom Dropdown Handling
+        const dropdownContainer = document.getElementById('payer-custom-dropdown');
+        const dropdownTrigger = document.getElementById('payer-dropdown-trigger');
+        const selectedText = document.getElementById('payer-dropdown-selected-text');
+        const dropdownMenu = document.getElementById('payer-dropdown-menu');
+
+        if (dropdownContainer && dropdownTrigger && selectedText && dropdownMenu) {
+            // Setup trigger toggle click listener (only once)
+            if (!dropdownTrigger.onclick) {
+                dropdownTrigger.onclick = (e) => {
+                    e.stopPropagation();
+                    dropdownContainer.classList.toggle('active');
+                };
+                
+                // Document click outside to close dropdown
+                document.addEventListener('click', () => {
+                    dropdownContainer.classList.remove('active');
+                });
+            }
+
+            // Find current payer name
+            const activePayer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+            selectedText.textContent = activePayer ? activePayer.name : '-- Select Payer --';
+
+            // Populate options inside menu
+            dropdownMenu.innerHTML = '';
+            
+            // "-- Select Payer --" option
+            const defaultOpt = document.createElement('div');
+            defaultOpt.className = 'custom-dropdown-option';
+            if (window.billPayerId === null) defaultOpt.classList.add('selected');
+            defaultOpt.textContent = '-- Select Payer --';
+            defaultOpt.onclick = (e) => {
+                e.stopPropagation();
+                window.billPayerId = null;
+                selectedText.textContent = '-- Select Payer --';
+                dropdownContainer.classList.remove('active');
+                saveState();
+                if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
+                if (typeof window.calculate === 'function') window.calculate('inline');
+            };
+            dropdownMenu.appendChild(defaultOpt);
+
+            // Roster Options
+            window.people.forEach(person => {
+                const opt = document.createElement('div');
+                opt.className = 'custom-dropdown-option';
+                if (window.billPayerId === person.id) opt.classList.add('selected');
+                opt.textContent = person.name;
+                opt.onclick = (e) => {
+                    e.stopPropagation();
+                    window.billPayerId = person.id;
+                    selectedText.textContent = person.name;
+                    dropdownContainer.classList.remove('active');
+                    saveState();
+                    if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
+                    if (typeof window.calculate === 'function') window.calculate('inline');
+                };
+                dropdownMenu.appendChild(opt);
+            });
+        }
+    };
+
     window.renderPeople = function() {
         if (!avatarsContainer) return;
         avatarsContainer.innerHTML = '';
@@ -769,6 +1112,8 @@ document.addEventListener('DOMContentLoaded', () => {
         addBtn.textContent = '+';
         addBtn.onclick = () => window.addPerson();
         avatarsContainer.appendChild(addBtn);
+        
+        window.syncBillMetadataUI();
     };
 
     window.addPerson = () => {
@@ -1713,10 +2058,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const currentTarget = window.cashData[monthKey].target;
         const targetInfo = document.getElementById('cash-target-info');
+        const targetCard = document.getElementById('stat-card-target');
         if (targetInfo) {
             targetInfo.innerHTML = formatRupiah(currentTarget);
-            targetInfo.style.cursor = 'pointer';
-            targetInfo.onclick = () => window.changeTarget(monthKey);
+        }
+        if (targetCard) {
+            targetCard.style.cursor = 'pointer';
+            targetCard.onclick = () => window.changeTarget(monthKey);
         }
 
         cashList.innerHTML = '';
@@ -2027,6 +2375,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.cashData[monthKey].target = newTarget;
                 saveState();
             }
+        } else if (currentModalAction.startsWith('edit-item-')) {
+            const id = Number(currentModalAction.split('-')[2]);
+            const item = window.items.find(i => i.id === id);
+            if (item) {
+                const newName = document.getElementById('edit-item-name').value.trim();
+                const newPrice = parseFloat(document.getElementById('edit-item-price').value);
+                if (newName && !isNaN(newPrice) && newPrice > 0) {
+                    item.name = newName;
+                    item.price = newPrice;
+                    saveState();
+                    renderItems();
+                    if (typeof window.renderHomeDashboard === 'function') {
+                        window.renderHomeDashboard();
+                    }
+                } else {
+                    alert('Please enter a valid item name and price.');
+                    return;
+                }
+            }
         } else if (currentModalAction === 'confirm') {
             if (window.confirmCallback) window.confirmCallback();
         }
@@ -2045,8 +2412,54 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prev-month').onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCashFund(); };
     document.getElementById('next-month').onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCashFund(); };
 
+    // Edit Item modal form builder
+    window.editItem = function(id) {
+        const item = window.items.find(i => i.id === id);
+        if (!item) return;
+        
+        modalTitle.textContent = 'Edit Item';
+        modalContent.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 1.2rem; padding: 1rem 0;">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="font-weight: 700; font-size: 0.9rem; color: rgba(255, 255, 255, 0.75);">Item Name</label>
+                    <input type="text" id="edit-item-name" value="${item.name}" 
+                           style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; transition: all 0.3s;"
+                           onfocus="this.style.borderColor='#6366f1';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="font-weight: 700; font-size: 0.9rem; color: rgba(255, 255, 255, 0.75);">Price (IDR)</label>
+                    <input type="number" id="edit-item-price" value="${item.price}" 
+                           style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; transition: all 0.3s;"
+                           onfocus="this.style.borderColor='#6366f1';" onblur="this.style.borderColor='rgba(255,255,255,0.1)';">
+                </div>
+            </div>
+        `;
+        modalSave.textContent = 'Save Changes';
+        modalSave.style.background = 'linear-gradient(135deg, #6366f1, #a855f7)';
+        modalSave.style.display = 'block';
+        modalCancel.style.display = 'block';
+        
+        currentModalAction = 'edit-item-' + id;
+        modalOverlay.classList.remove('hidden');
+    };
+
     // Delegation for dynamic elements
     document.addEventListener('click', (e) => {
+        if (e.target.closest('.edit-item-btn')) {
+            const id = Number(e.target.closest('.edit-item-btn').dataset.id);
+            window.editItem(id);
+        }
+        if (e.target.closest('.delete-item-btn')) {
+            const id = Number(e.target.closest('.delete-item-btn').dataset.id);
+            window.customConfirm('Are you sure you want to delete this item?', () => {
+                window.items = window.items.filter(i => i.id !== id);
+                saveState();
+                renderItems();
+                if (typeof window.renderHomeDashboard === 'function') {
+                    window.renderHomeDashboard();
+                }
+            });
+        }
         if (e.target.closest('.delete-dest-btn')) {
             const id = Number(e.target.closest('.delete-dest-btn').dataset.id);
             window.customConfirm('Are you sure you want to delete this destination?', () => {
@@ -2071,7 +2484,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const idx = item.assignees.indexOf(pId);
             if (idx > -1) item.assignees.splice(idx, 1);
             else item.assignees.push(pId);
+            
+            // Persist assigned state immediately to local & cloud databases
+            saveState();
+            
+            // Update items render list and calculations
             renderItems();
+            
+            // Sync Home dashboard stats live
+            if (typeof window.renderHomeDashboard === 'function') {
+                window.renderHomeDashboard();
+            }
         }
         if (e.target.closest('.pay-toggle')) {
             const btn = e.target.closest('.pay-toggle');
@@ -2167,10 +2590,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const cashChanged = JSON.stringify(data.cashData) !== JSON.stringify(window.cashData);
             const travelChanged = JSON.stringify(data.travelData) !== JSON.stringify(window.travelData);
             const wheelChanged = JSON.stringify(data.wheelParticipants) !== JSON.stringify(window.wheelParticipants);
+            const profilesChanged = JSON.stringify(data.userProfiles) !== JSON.stringify(window.userProfiles);
 
             window.people = (data.people && data.people.length > 0) ? data.people : window.people;
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
+            if (data.userProfiles) window.userProfiles = data.userProfiles;
             
             // Update travelData while preserving any locally loaded albums
             const remoteTravelData = data.travelData || [];
@@ -2184,16 +2609,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             window.wheelParticipants = data.wheelParticipants || [];
+            window.billTitle = data.billTitle || 'Trip Bill';
+            window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
+            if (typeof syncBillMetadataUI === 'function') syncBillMetadataUI();
             
             lastDataString = currentDataString;
 
             // Targeted Re-rendering
+            if (profilesChanged) {
+                window.refreshAllAvatars();
+                if (!mainView.classList.contains('hidden')) renderPeople();
+                if (!cashView.classList.contains('hidden')) renderCashFund();
+            }
+
             if (peopleChanged) {
                 if (!mainView.classList.contains('hidden')) {
-                    renderPeople();
+                    if (!profilesChanged) renderPeople();
                     renderItems();
                 }
-                if (!cashView.classList.contains('hidden')) renderCashFund();
+                if (!cashView.classList.contains('hidden') && !profilesChanged) renderCashFund();
                 if (!spinWheelView.classList.contains('hidden')) window.initWheel();
             } else if (itemsChanged) {
                 if (!mainView.classList.contains('hidden')) renderItems();
@@ -2724,7 +3158,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (borderSelector) {
             const themes = [
                 { id: 'none', label: 'None' },
-                { id: 'space', label: 'Space' }
+                { id: 'cat_white', label: 'White Cat' },
+                { id: 'frog', label: 'Green Frog' },
+                { id: 'angel_pink', label: 'Pink Angel' },
+                { id: 'fox', label: 'Orange Fox' },
+                { id: 'angel_blue', label: 'Blue Angel' },
+                { id: 'witch', label: 'Witch' },
+                { id: 'cat_dark', label: 'Dark Cat' },
+                { id: 'angel_royal', label: 'Royal Angel' }
             ];
             
             let html = '';
@@ -2790,6 +3231,11 @@ document.addEventListener('DOMContentLoaded', () => {
             window.userProfiles[newUsername] = { ...profile, username: newUsername };
             delete window.userProfiles[currentUser];
             sessionStorage.setItem('bekantans_user', newUsername);
+            
+            const personObj = window.people.find(p => p.name === currentUser);
+            if (personObj) {
+                personObj.name = newUsername;
+            }
         } else {
             // Re-assign in case capitalization changed
             window.userProfiles[newUsername] = profile;

@@ -2300,7 +2300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     assigneeHtml = `
-                        <div class="dest-assignee-badge" title="Participants: ${displayAssignees.join(', ')}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px); gap: 0.4rem; overflow: visible !important;">
+                        <div class="dest-assignee-badge" title="Participants: ${displayAssignees.join(', ')}" style="position: absolute; bottom: 1rem; right: 1rem; display: flex; align-items: center; background: rgba(15, 15, 25, 0.65); padding: 0.3rem 0.6rem 0.3rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(20px); gap: 0.4rem; overflow: visible !important; z-index: 5; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
                             <div style="display: flex; align-items: center; margin-left: 10px; overflow: visible !important;">
                                 ${avatarsHtml}
                             </div>
@@ -2327,6 +2327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="dd-month">${dateBadge.month}</span>
                             <span class="dd-year">${dateBadge.year}</span>
                         </div>
+                        ${assigneeHtml}
                         <div class="dest-actions">
                             <button class="action-btn-icon edit edit-dest-btn" data-id="${dest.id}">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -2357,7 +2358,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="dest-cost-label">Total Cost</span>
                                 <div class="dest-cost-value">${formatRupiah(dest.cost)}</div>
                             </div>
-                            ${assigneeHtml}
                         </div>
                     </div>
                 </div>

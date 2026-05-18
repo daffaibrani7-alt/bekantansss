@@ -215,7 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileView) {
                 profileView.classList.remove('hidden');
                 document.body.classList.add('profile-active');
-                const currentUser = sessionStorage.getItem(USER_KEY) || 'Guest';
+                const loggedInUser = sessionStorage.getItem(USER_KEY) || 'Guest';
+                const currentUser = window.profileTargetUser || loggedInUser;
                 const profileData = (window.userProfiles && window.userProfiles[currentUser]) ? window.userProfiles[currentUser] : { title: 'Bekantans Squad', photo: currentUser.charAt(0).toUpperCase() };
                 
                 document.getElementById('profile-username').textContent = currentUser;
@@ -224,6 +225,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const titleBadge = document.getElementById('profile-title-badge');
                 if (titleBadge) titleBadge.textContent = profileData.title;
+
+                // Dynamically configure the Edit Profile button to act as a "Back" button if viewing someone else
+                const editBtn = profileView.querySelector('.profile-edit-btn');
+                if (editBtn) {
+                    if (currentUser === loggedInUser) {
+                        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.3rem;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Edit Profile`;
+                        editBtn.onclick = () => window.openProfileEdit();
+                        editBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+                        editBtn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    } else {
+                        editBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.3rem;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Roster`;
+                        editBtn.onclick = () => { delete window.profileTargetUser; window.showView('split'); };
+                        editBtn.style.background = 'rgba(99, 102, 241, 0.2)';
+                        editBtn.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                    }
+                }
 
                 const largeAvatar = profileView.querySelector('.large-avatar');
                 if (largeAvatar) {
@@ -462,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.showProfile = () => {
+        delete window.profileTargetUser; // Reset to own profile when navigating from navbar
         showView('profile');
     };
 
@@ -788,6 +806,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'home-member-row-premium';
+                wrapper.style.cursor = 'pointer';
+                wrapper.onclick = () => {
+                    window.profileTargetUser = person.name;
+                    window.showView('profile');
+                };
                 
                 const leftSide = document.createElement('div');
                 leftSide.className = 'home-member-left';
@@ -1381,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         photoHtml = `<span style="font-weight: 700; font-size: 0.7rem; color: white;">${initial}</span>`;
                     }
                     return `
-                        <div class="tooltip-user-row">
+                        <div class="tooltip-user-row" style="cursor: pointer;" onclick="window.profileTargetUser = '${user}'; window.showView('profile');">
                             <div class="tooltip-avatar-container">
                                 <div class="profile-avatar ${themeClass}" style="width: 28px; height: 28px; font-size: 0.7rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative; border: 1.5px solid #0f0f19; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
                                     ${photoHtml}

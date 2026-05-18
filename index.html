@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Split Bill - Rupiah Animation</title>
     <meta name="description" content="Calculate and split your bills easily with beautiful Rupiah coin animations.">
-    <link rel="stylesheet" href="style.css?v=410">
+    <link rel="stylesheet" href="style.css?v=420">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -650,10 +650,39 @@
         <button class="btn-toolbar btn-toolbar-cancel" id="selection-cancel-btn">Cancel</button>
     </div>
 
+    <!-- Custom Photo Cropper Modal -->
+    <div id="cropper-modal" class="" style="z-index: 10000; position: fixed; inset: 0; background: rgba(5, 5, 8, 0.95); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(20px); transition: all 0.3s ease-in-out; opacity: 0; pointer-events: none; visibility: hidden;">
+        <div class="cropper-container glass-card" style="width: 90%; max-width: 420px; padding: 2.2rem 2rem; border-radius: 32px; text-align: center; border: 1px solid rgba(255,255,255,0.08); background: rgba(20, 20, 30, 0.6); box-shadow: 0 30px 60px rgba(0,0,0,0.5); backdrop-filter: blur(40px);">
+            <h3 style="margin-bottom: 0.3rem; font-size: 1.4rem; font-weight: 700; color: white;">Adjust Profile Photo</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.8rem; font-weight: 500;">Drag to reposition and use the slider to scale</p>
+            
+            <!-- Crop Work Area -->
+            <div class="crop-work-area" id="crop-work-area" style="position: relative; width: 260px; height: 260px; margin: 0 auto 1.8rem; border-radius: 50%; overflow: hidden; background: #0b0b12; border: 2px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; cursor: grab; user-select: none; box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);">
+                <!-- The Image itself -->
+                <img id="cropper-image" src="" style="position: absolute; transform-origin: top left; pointer-events: none; user-select: none;" />
+                <!-- Subtle grid helper -->
+                <div style="position: absolute; inset: 0; border-radius: 50%; pointer-events: none; border: 1px dashed rgba(255,255,255,0.1); box-shadow: 0 0 0 999px rgba(5,5,8,0.25);"></div>
+            </div>
+            
+            <!-- Scaling Slider Control -->
+            <div class="slider-control" style="margin-bottom: 2.2rem; display: flex; align-items: center; gap: 1.2rem; background: rgba(255,255,255,0.03); padding: 0.8rem 1.2rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                <input type="range" id="crop-zoom-slider" min="1" max="3" step="0.001" value="1" style="flex: 1; accent-color: #c084fc; height: 6px; border-radius: 10px; background: rgba(255,255,255,0.1); cursor: pointer; outline: none; border: none;" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/></svg>
+            </div>
+            
+            <!-- Actions Button Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button class="primary-btn" onclick="window.closeCropper()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); padding: 0.8rem; border-radius: 100px;">Cancel</button>
+                <button class="primary-btn glow-purple" onclick="window.saveCroppedPhoto()" style="padding: 0.8rem; border-radius: 100px;">Save Photo</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-    <script src="script.js?v=370"></script>
+    <script src="script.js?v=390"></script>
 </body>
 </html>

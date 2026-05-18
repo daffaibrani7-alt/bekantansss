@@ -1153,6 +1153,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="m-dest-cost" placeholder="Estimated Budget">
                 </div>
 
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Assignee / Traveler</label>
+                    <select id="m-dest-assignee" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; width: 100%; cursor: pointer;">
+                        <option value="" style="background: #0f0f19;">Group Trip / Unassigned</option>
+                        ${Object.keys(window.userProfiles || {}).map(user => `
+                            <option value="${user}" style="background: #0f0f19;">${user}</option>
+                        `).join('')}
+                    </select>
+                </div>
+
                 <div class="wishlist-toggle-premium" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
                     <input type="checkbox" id="m-dest-wishlist" hidden>
                     <div class="toggle-track">
@@ -1224,17 +1234,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="m-dest-cost" value="${dest.cost}">
                 </div>
 
+                <div class="input-group">
+                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Assignee / Traveler</label>
+                    <select id="m-dest-assignee" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; width: 100%; cursor: pointer;">
+                        <option value="" ${!dest.assignee ? 'selected' : ''} style="background: #0f0f19;">Group Trip / Unassigned</option>
+                        ${Object.keys(window.userProfiles || {}).map(user => `
+                            <option value="${user}" ${dest.assignee === user ? 'selected' : ''} style="background: #0f0f19;">${user}</option>
+                        `).join('')}
+                    </select>
+                </div>
+
                 <div class="wishlist-toggle-premium ${dest.isWishlist ? 'active' : ''}" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
                     <input type="checkbox" id="m-dest-wishlist" ${dest.isWishlist ? 'checked' : ''} hidden>
                     <div class="toggle-track">
                         <div class="toggle-thumb"></div>
                     </div>
                     <span>Mark as Wishlist</span>
-                </div>
-
-                <div class="input-group">
-                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Update Photo</label>
-                    <span>Wishlist Adventure</span>
                 </div>
 
                 <div class="input-group">
@@ -1261,6 +1276,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const dest = window.travelData.find(d => d.id === id);
         if (!dest) return;
         
+        let assigneeHtml = '';
+        if (dest.assignee && window.userProfiles && window.userProfiles[dest.assignee]) {
+            const profile = window.userProfiles[dest.assignee];
+            let themeClass = '';
+            if (profile.borderTheme && profile.borderTheme !== 'none') {
+                themeClass = ` avatar-theme-${profile.borderTheme}`;
+            }
+            
+            let photoHtml = '';
+            if (profile.photo && profile.photo.length > 2) {
+                photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                const initial = profile.photo || dest.assignee.charAt(0).toUpperCase();
+                photoHtml = `<span style="font-weight: 700; font-size: 0.9rem; color: white;">${initial}</span>`;
+            }
+            
+            assigneeHtml = `
+                <div class="details-assignee animate-fade-in" style="display: flex; align-items: center; background: rgba(255,255,255,0.06); padding: 0.4rem 0.8rem 0.4rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 0.2rem;">
+                    <div class="profile-avatar ${themeClass}" style="width: 38px; height: 38px; font-size: 0.9rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
+                        ${photoHtml}
+                    </div>
+                    <div style="display: flex; flex-direction: column; margin-left: 0.6rem; text-align: left;">
+                        <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px;">Traveler</span>
+                        <span style="font-size: 0.9rem; font-weight: 700; color: white; line-height: 1.1;">${dest.assignee}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         const detailsView = document.getElementById('travel-details-view');
         detailsView.innerHTML = `
             <div class="details-hero" style="--hero-bg: url('${dest.image}')">
@@ -1277,13 +1321,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span><div class="meta-icon-circle duration"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div> ${dest.duration.includes('Days') && parseInt(dest.duration) === 1 ? '1 Day' : dest.duration}</span>
                             <span><div class="meta-icon-circle date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div> ${formatDate(dest.date)}</span>
                         </div>
-                        <div class="details-expense-badge">
-                            <div class="badge-icon">
-                                <span style="font-weight: 900; font-size: 1.2rem; letter-spacing: -0.5px;">Rp</span>
-                            </div>
-                            <div class="badge-text">
-                                <span class="badge-label">Total Expense</span>
-                                <span class="badge-amount" style="font-size: 1.6rem; font-weight: 900; color: white; line-height: 1;">${formatRupiah(dest.cost)}</span>
+                        <div style="display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;">
+                            ${assigneeHtml}
+                            <div class="details-expense-badge">
+                                <div class="badge-icon">
+                                    <span style="font-weight: 900; font-size: 1.2rem; letter-spacing: -0.5px;">Rp</span>
+                                </div>
+                                <div class="badge-text">
+                                    <span class="badge-label">Total Expense</span>
+                                    <span class="badge-amount" style="font-size: 1.6rem; font-weight: 900; color: white; line-height: 1;">${formatRupiah(dest.cost)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2146,6 +2193,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const dateBadge = formatDate(dest.date, 'badge');
             
+            let assigneeHtml = '';
+            if (dest.assignee && window.userProfiles && window.userProfiles[dest.assignee]) {
+                const profile = window.userProfiles[dest.assignee];
+                let themeClass = '';
+                if (profile.borderTheme && profile.borderTheme !== 'none') {
+                    themeClass = ` avatar-theme-${profile.borderTheme}`;
+                }
+                
+                let photoHtml = '';
+                if (profile.photo && profile.photo.length > 2) {
+                    photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                } else {
+                    const initial = profile.photo || dest.assignee.charAt(0).toUpperCase();
+                    photoHtml = `<span style="font-weight: 700; font-size: 0.7rem; color: white;">${initial}</span>`;
+                }
+                
+                assigneeHtml = `
+                    <div class="dest-assignee-badge" title="Assigned to ${dest.assignee}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.3rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px);">
+                        <div class="profile-avatar ${themeClass}" style="width: 26px; height: 26px; font-size: 0.7rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
+                            ${photoHtml}
+                        </div>
+                        <span class="assignee-name" style="font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-left: 0.4rem;">${dest.assignee}</span>
+                    </div>
+                `;
+            }
+
             html += `
                 <div class="destination-card glass-card" onclick="window.viewDestination(event, ${dest.id})">
                     <div class="dest-image" style="background-image: url('${dest.image}')">
@@ -2186,11 +2259,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <h3 class="dest-name">${dest.name}</h3>
                         </div>
-                        <div class="dest-footer">
+                        <div class="dest-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <div class="dest-cost-box">
                                 <span class="dest-cost-label">Total Cost</span>
                                 <div class="dest-cost-value">${formatRupiah(dest.cost)}</div>
                             </div>
+                            ${assigneeHtml}
                         </div>
                     </div>
                 </div>
@@ -2255,6 +2329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
+            const assignee = document.getElementById('m-dest-assignee') ? document.getElementById('m-dest-assignee').value : '';
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveBtn = document.getElementById('modal-save');
@@ -2271,7 +2346,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         cost: cost, 
                         date: date, 
                         image: imgUrl,
-                        isWishlist: isWishlist
+                        isWishlist: isWishlist,
+                        assignee: assignee
                     });
                     saveState();
                 }
@@ -2307,6 +2383,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
+            const assignee = document.getElementById('m-dest-assignee') ? document.getElementById('m-dest-assignee').value : '';
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveBtn = document.getElementById('modal-save');
@@ -2323,7 +2400,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         cost: cost, 
                         date: date, 
                         image: imgUrl,
-                        isWishlist: isWishlist
+                        isWishlist: isWishlist,
+                        assignee: assignee
                     };
                     saveState();
                 }
@@ -2958,6 +3036,145 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Custom Profile Photo Cropper Logic ---
+    let cropDragActive = false;
+    let cropStartX = 0;
+    let cropStartY = 0;
+    let cropImgLeft = 0;
+    let cropImgTop = 0;
+    let cropCurrentScale = 1;
+    let cropBaseScale = 1;
+    let originalImageEl = null;
+
+    const cropperModal = document.getElementById('cropper-modal');
+    const cropperImage = document.getElementById('cropper-image');
+    const cropZoomSlider = document.getElementById('crop-zoom-slider');
+    const cropWorkArea = document.getElementById('crop-work-area');
+
+    function updateCropperImageTransform() {
+        if (cropperImage) {
+            cropperImage.style.transform = `translate(${cropImgLeft}px, ${cropImgTop}px) scale(${cropCurrentScale})`;
+        }
+    }
+
+    if (cropWorkArea && cropperImage && cropZoomSlider) {
+        // Drag Events
+        cropWorkArea.addEventListener('mousedown', (e) => {
+            cropDragActive = true;
+            cropStartX = e.clientX - cropImgLeft;
+            cropStartY = e.clientY - cropImgTop;
+            cropWorkArea.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!cropDragActive) return;
+            cropImgLeft = e.clientX - cropStartX;
+            cropImgTop = e.clientY - cropStartY;
+            
+            // Constrain movement so they don't drag the image completely out of the circle!
+            const boxSize = 260;
+            const scaledWidth = originalImageEl ? (originalImageEl.width * cropCurrentScale) : boxSize;
+            const scaledHeight = originalImageEl ? (originalImageEl.height * cropCurrentScale) : boxSize;
+            
+            cropImgLeft = Math.min(boxSize / 2, Math.max(boxSize / 2 - scaledWidth, cropImgLeft));
+            cropImgTop = Math.min(boxSize / 2, Math.max(boxSize / 2 - scaledHeight, cropImgTop));
+            
+            updateCropperImageTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            cropDragActive = false;
+            cropWorkArea.style.cursor = 'grab';
+        });
+
+        // Touch support for Mobile
+        cropWorkArea.addEventListener('touchstart', (e) => {
+            cropDragActive = true;
+            const touch = e.touches[0];
+            cropStartX = touch.clientX - cropImgLeft;
+            cropStartY = touch.clientY - cropImgTop;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!cropDragActive) return;
+            const touch = e.touches[0];
+            cropImgLeft = touch.clientX - cropStartX;
+            cropImgTop = touch.clientY - cropStartY;
+            
+            const boxSize = 260;
+            const scaledWidth = originalImageEl ? (originalImageEl.width * cropCurrentScale) : boxSize;
+            const scaledHeight = originalImageEl ? (originalImageEl.height * cropCurrentScale) : boxSize;
+            cropImgLeft = Math.min(boxSize / 2, Math.max(boxSize / 2 - scaledWidth, cropImgLeft));
+            cropImgTop = Math.min(boxSize / 2, Math.max(boxSize / 2 - scaledHeight, cropImgTop));
+            
+            updateCropperImageTransform();
+        });
+
+        window.addEventListener('touchend', () => {
+            cropDragActive = false;
+        });
+
+        // Zoom Slider Events
+        cropZoomSlider.addEventListener('input', () => {
+            const oldScale = cropCurrentScale;
+            cropCurrentScale = parseFloat(cropZoomSlider.value);
+            
+            const boxSize = 260;
+            const centerX = boxSize / 2;
+            const centerY = boxSize / 2;
+            
+            const relX = centerX - cropImgLeft;
+            const relY = centerY - cropImgTop;
+            
+            cropImgLeft = centerX - (relX / oldScale) * cropCurrentScale;
+            cropImgTop = centerY - (relY / oldScale) * cropCurrentScale;
+            
+            updateCropperImageTransform();
+        });
+    }
+
+    window.closeCropper = () => {
+        if (cropperModal) {
+            cropperModal.style.opacity = '0';
+            cropperModal.style.pointerEvents = 'none';
+            cropperModal.style.visibility = 'hidden';
+        }
+        const fileInput = document.getElementById('edit-profile-photo-upload');
+        if (fileInput) fileInput.value = '';
+    };
+
+    window.saveCroppedPhoto = () => {
+        if (!originalImageEl) return;
+        
+        const canvas = document.createElement('canvas');
+        const canvasSize = 250;
+        const cropBoxSize = 260;
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvasSize, canvasSize);
+        
+        const ratio = canvasSize / cropBoxSize;
+        
+        const targetLeft = cropImgLeft * ratio;
+        const targetTop = cropImgTop * ratio;
+        const targetWidth = originalImageEl.width * cropCurrentScale * ratio;
+        const targetHeight = originalImageEl.height * cropCurrentScale * ratio;
+        
+        ctx.drawImage(originalImageEl, targetLeft, targetTop, targetWidth, targetHeight);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        window.tempProfilePhotoBase64 = dataUrl;
+        
+        const previewEl = document.getElementById('edit-profile-photo-preview');
+        if (previewEl) {
+            previewEl.innerHTML = `<img src="${dataUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        }
+        
+        window.closeCropper();
+    };
+
     window.handleProfilePhotoUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -2966,42 +3183,38 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 250;
-                const MAX_HEIGHT = 250;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width *= MAX_HEIGHT / height;
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                window.tempProfilePhotoBase64 = dataUrl;
+                originalImageEl = img;
                 
-                const previewEl = document.getElementById('edit-profile-photo-preview');
-                if (previewEl) {
-                    previewEl.innerHTML = `<img src="${dataUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                const boxSize = 260;
+                const scaleX = boxSize / img.width;
+                const scaleY = boxSize / img.height;
+                cropBaseScale = Math.max(scaleX, scaleY);
+                
+                cropperImage.style.width = img.width + 'px';
+                cropperImage.style.height = img.height + 'px';
+                
+                cropImgLeft = (boxSize - img.width * cropBaseScale) / 2;
+                cropImgTop = (boxSize - img.height * cropBaseScale) / 2;
+                cropCurrentScale = cropBaseScale;
+                
+                cropZoomSlider.min = cropBaseScale;
+                cropZoomSlider.max = cropBaseScale * 4;
+                cropZoomSlider.step = 0.001;
+                cropZoomSlider.value = cropBaseScale;
+                
+                cropperImage.src = img.src;
+                updateCropperImageTransform();
+                
+                if (cropperModal) {
+                    cropperModal.style.opacity = '1';
+                    cropperModal.style.pointerEvents = 'auto';
+                    cropperModal.style.visibility = 'visible';
                 }
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
         
-        // Hide menu
         const menu = document.getElementById('edit-photo-options-menu');
         if (menu) menu.classList.add('hidden');
         const removeBtn = document.getElementById('edit-remove-photo-btn');

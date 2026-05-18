@@ -3334,6 +3334,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof renderItems === 'function') renderItems();
         if (typeof renderCashFund === 'function') renderCashFund();
         if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
+        if (typeof renderTravelJournal === 'function') renderTravelJournal();
+        
+        // Also update destination details view if it's currently open
+        const travelDetailsView = document.getElementById('travel-details-view');
+        if (travelDetailsView && !travelDetailsView.classList.contains('hidden') && window.currentAlbumDestId) {
+            // Fake an event or check if we can safely re-trigger view
+            const dummyEvent = { target: { closest: () => null } };
+            window.viewDestination(dummyEvent, window.currentAlbumDestId);
+        }
     };
 
     window.openProfileEdit = () => {

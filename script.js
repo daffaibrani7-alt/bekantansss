@@ -240,10 +240,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (typeof updateNavAvatar === 'function') updateNavAvatar();
 
-                // Calculate and update stats
-                const trips = window.travelData ? window.travelData.length : 0;
-                const photos = window.travelData ? window.travelData.reduce((sum, dest) => sum + (dest.album ? dest.album.length : 0), 0) : 0;
-                const totalSpent = window.travelData ? window.travelData.filter(d => !d.isWishlist).reduce((sum, dest) => sum + (Number(dest.cost) || 0), 0) : 0;
+                // Calculate and update personal stats
+                let trips = 0;
+                let photos = 0;
+                let totalSpent = 0;
+                const userTrips = [];
+
+                if (window.travelData) {
+                    const totalPeopleCount = Math.max(1, Object.keys(window.userProfiles || {}).length);
+                    window.travelData.forEach(dest => {
+                        const assignees = dest.assignees || (dest.assignee ? [dest.assignee] : []);
+                        // A trip is relevant if unassigned/Group Trip OR if currentUser is explicitly assigned
+                        const isRelevant = assignees.length === 0 || assignees.includes(currentUser);
+                        
+                        if (isRelevant) {
+                            trips++;
+                            userTrips.push(dest);
+                            photos += dest.album ? dest.album.length : 0;
+                            
+                            if (!dest.isWishlist) {
+                                if (assignees.length > 0) {
+                                    // Split cost among assigned travelers
+                                    totalSpent += (Number(dest.cost) || 0) / assignees.length;
+                                } else {
+                                    // Split cost among all group members for group trips
+                                    totalSpent += (Number(dest.cost) || 0) / totalPeopleCount;
+                                }
+                            }
+                        }
+                    });
+                }
                 
                 const formatShortNumber = (num) => {
                     if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -262,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Render Profile Trips Grid
                 const profileTripsGrid = document.getElementById('profile-trips-grid');
                 if (profileTripsGrid) {
-                    const sortedTrips = (window.travelData || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+                    const sortedTrips = userTrips.sort((a, b) => new Date(b.date) - new Date(a.date));
                     let html = '';
                     sortedTrips.forEach(dest => {
                         const dateBadge = typeof formatDate === 'function' ? formatDate(dest.date, 'badge') : {day: '', month: '', year: ''};

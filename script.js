@@ -1154,13 +1154,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="input-group">
-                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Assignee / Traveler</label>
-                    <select id="m-dest-assignee" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; width: 100%; cursor: pointer;">
-                        <option value="" style="background: #0f0f19;">Group Trip / Unassigned</option>
-                        ${Object.keys(window.userProfiles || {}).map(user => `
-                            <option value="${user}" style="background: #0f0f19;">${user}</option>
-                        `).join('')}
-                    </select>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Travelers</label>
+                    <div class="assignees-selector-widget" style="display: flex; flex-wrap: wrap; gap: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1rem;">
+                        ${Object.keys(window.userProfiles || {}).map(user => {
+                            const profile = window.userProfiles[user];
+                            let themeClass = '';
+                            if (profile.borderTheme && profile.borderTheme !== 'none') {
+                                themeClass = ` avatar-theme-${profile.borderTheme}`;
+                            }
+                            let photoHtml = '';
+                            if (profile.photo && profile.photo.length > 2) {
+                                photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                            } else {
+                                const initial = profile.photo || user.charAt(0).toUpperCase();
+                                photoHtml = `<span style="font-weight: 700; font-size: 0.75rem; color: white;">${initial}</span>`;
+                            }
+                            return `
+                                <div class="assignee-select-chip" data-username="${user}" onclick="this.classList.toggle('active')" style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 100px; padding: 0.4rem 0.8rem 0.4rem 0.4rem; cursor: pointer; transition: all 0.3s; user-select: none; position: relative; gap: 0.5rem;">
+                                    <div class="profile-avatar ${themeClass}" style="width: 28px; height: 28px; font-size: 0.75rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
+                                        ${photoHtml}
+                                    </div>
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: rgba(255, 255, 255, 0.6);">${user}</span>
+                                    <div class="select-check-dot" style="width: 8px; height: 8px; border-radius: 50%; background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.3); transition: all 0.3s;"></div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
 
                 <div class="wishlist-toggle-premium" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
@@ -1235,13 +1254,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="input-group">
-                    <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Assignee / Traveler</label>
-                    <select id="m-dest-assignee" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 0.9rem 1.1rem; color: white; font-size: 1rem; outline: none; width: 100%; cursor: pointer;">
-                        <option value="" ${!dest.assignee ? 'selected' : ''} style="background: #0f0f19;">Group Trip / Unassigned</option>
-                        ${Object.keys(window.userProfiles || {}).map(user => `
-                            <option value="${user}" ${dest.assignee === user ? 'selected' : ''} style="background: #0f0f19;">${user}</option>
-                        `).join('')}
-                    </select>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Assignees / Travelers</label>
+                    <div class="assignees-selector-widget" style="display: flex; flex-wrap: wrap; gap: 0.8rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1rem;">
+                        ${Object.keys(window.userProfiles || {}).map(user => {
+                            const profile = window.userProfiles[user];
+                            let themeClass = '';
+                            if (profile.borderTheme && profile.borderTheme !== 'none') {
+                                themeClass = ` avatar-theme-${profile.borderTheme}`;
+                            }
+                            let photoHtml = '';
+                            if (profile.photo && profile.photo.length > 2) {
+                                photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                            } else {
+                                const initial = profile.photo || user.charAt(0).toUpperCase();
+                                photoHtml = `<span style="font-weight: 700; font-size: 0.75rem; color: white;">${initial}</span>`;
+                            }
+                            
+                            const isSelected = (dest.assignees || (dest.assignee ? [dest.assignee] : [])).includes(user);
+                            const activeClass = isSelected ? 'active' : '';
+                            
+                            return `
+                                <div class="assignee-select-chip ${activeClass}" data-username="${user}" onclick="this.classList.toggle('active')" style="display: flex; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 100px; padding: 0.4rem 0.8rem 0.4rem 0.4rem; cursor: pointer; transition: all 0.3s; user-select: none; position: relative; gap: 0.5rem;">
+                                    <div class="profile-avatar ${themeClass}" style="width: 28px; height: 28px; font-size: 0.75rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
+                                        ${photoHtml}
+                                    </div>
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: rgba(255, 255, 255, 0.6);">${user}</span>
+                                    <div class="select-check-dot" style="width: 8px; height: 8px; border-radius: 50%; background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.3); transition: all 0.3s;"></div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
 
                 <div class="wishlist-toggle-premium ${dest.isWishlist ? 'active' : ''}" onclick="this.classList.toggle('active'); const cb = document.getElementById('m-dest-wishlist'); cb.checked = !cb.checked;">
@@ -1277,32 +1319,48 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!dest) return;
         
         let assigneeHtml = '';
-        if (dest.assignee && window.userProfiles && window.userProfiles[dest.assignee]) {
-            const profile = window.userProfiles[dest.assignee];
-            let themeClass = '';
-            if (profile.borderTheme && profile.borderTheme !== 'none') {
-                themeClass = ` avatar-theme-${profile.borderTheme}`;
-            }
+        const assignees = dest.assignees || (dest.assignee ? [dest.assignee] : []);
+        if (assignees.length > 0) {
+            let avatarsHtml = '';
+            const displayAssignees = assignees.filter(u => window.userProfiles && window.userProfiles[u]);
             
-            let photoHtml = '';
-            if (profile.photo && profile.photo.length > 2) {
-                photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-            } else {
-                const initial = profile.photo || dest.assignee.charAt(0).toUpperCase();
-                photoHtml = `<span style="font-weight: 700; font-size: 0.9rem; color: white;">${initial}</span>`;
+            if (displayAssignees.length > 0) {
+                displayAssignees.forEach((user, index) => {
+                    const profile = window.userProfiles[user];
+                    let themeClass = '';
+                    if (profile.borderTheme && profile.borderTheme !== 'none') {
+                        themeClass = ` avatar-theme-${profile.borderTheme}`;
+                    }
+                    
+                    let photoHtml = '';
+                    if (profile.photo && profile.photo.length > 2) {
+                        photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                    } else {
+                        const initial = profile.photo || user.charAt(0).toUpperCase();
+                        photoHtml = `<span style="font-weight: 700; font-size: 0.9rem; color: white;">${initial}</span>`;
+                    }
+                    
+                    avatarsHtml += `
+                        <div class="profile-avatar ${themeClass}" style="width: 38px; height: 38px; font-size: 0.9rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative; margin-left: ${index === 0 ? '0' : '-12px'}; border: 2.5px solid #0f0f19; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: ${10 - index};">
+                            ${photoHtml}
+                        </div>
+                    `;
+                });
+                
+                assigneeHtml = `
+                    <div class="details-assignee animate-fade-in" style="display: flex; align-items: center; background: rgba(255,255,255,0.06); padding: 0.4rem 1rem 0.4rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 0.2rem; gap: 0.4rem;">
+                        <div style="display: flex; align-items: center; margin-left: 8px;">
+                            ${avatarsHtml}
+                        </div>
+                        <div style="display: flex; flex-direction: column; margin-left: 0.4rem; text-align: left;">
+                            <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px;">Travelers</span>
+                            <span style="font-size: 0.9rem; font-weight: 700; color: white; line-height: 1.1; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${displayAssignees.join(', ')}
+                            </span>
+                        </div>
+                    </div>
+                `;
             }
-            
-            assigneeHtml = `
-                <div class="details-assignee animate-fade-in" style="display: flex; align-items: center; background: rgba(255,255,255,0.06); padding: 0.4rem 0.8rem 0.4rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); margin-bottom: 0.2rem;">
-                    <div class="profile-avatar ${themeClass}" style="width: 38px; height: 38px; font-size: 0.9rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
-                        ${photoHtml}
-                    </div>
-                    <div style="display: flex; flex-direction: column; margin-left: 0.6rem; text-align: left;">
-                        <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px;">Traveler</span>
-                        <span style="font-size: 0.9rem; font-weight: 700; color: white; line-height: 1.1;">${dest.assignee}</span>
-                    </div>
-                </div>
-            `;
         }
 
         const detailsView = document.getElementById('travel-details-view');
@@ -2194,29 +2252,45 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateBadge = formatDate(dest.date, 'badge');
             
             let assigneeHtml = '';
-            if (dest.assignee && window.userProfiles && window.userProfiles[dest.assignee]) {
-                const profile = window.userProfiles[dest.assignee];
-                let themeClass = '';
-                if (profile.borderTheme && profile.borderTheme !== 'none') {
-                    themeClass = ` avatar-theme-${profile.borderTheme}`;
-                }
+            const assignees = dest.assignees || (dest.assignee ? [dest.assignee] : []);
+            if (assignees.length > 0) {
+                let avatarsHtml = '';
+                const displayAssignees = assignees.filter(u => window.userProfiles && window.userProfiles[u]);
                 
-                let photoHtml = '';
-                if (profile.photo && profile.photo.length > 2) {
-                    photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-                } else {
-                    const initial = profile.photo || dest.assignee.charAt(0).toUpperCase();
-                    photoHtml = `<span style="font-weight: 700; font-size: 0.7rem; color: white;">${initial}</span>`;
-                }
-                
-                assigneeHtml = `
-                    <div class="dest-assignee-badge" title="Assigned to ${dest.assignee}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.3rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px);">
-                        <div class="profile-avatar ${themeClass}" style="width: 26px; height: 26px; font-size: 0.7rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative;">
-                            ${photoHtml}
+                if (displayAssignees.length > 0) {
+                    displayAssignees.forEach((user, index) => {
+                        const profile = window.userProfiles[user];
+                        let themeClass = '';
+                        if (profile.borderTheme && profile.borderTheme !== 'none') {
+                            themeClass = ` avatar-theme-${profile.borderTheme}`;
+                        }
+                        
+                        let photoHtml = '';
+                        if (profile.photo && profile.photo.length > 2) {
+                            photoHtml = `<img src="${profile.photo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                        } else {
+                            const initial = profile.photo || user.charAt(0).toUpperCase();
+                            photoHtml = `<span style="font-weight: 700; font-size: 0.75rem; color: white;">${initial}</span>`;
+                        }
+                        
+                        avatarsHtml += `
+                            <div class="profile-avatar ${themeClass}" style="width: 26px; height: 26px; font-size: 0.7rem; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; position: relative; margin-left: ${index === 0 ? '0' : '-8px'}; border: 2px solid #0f0f19; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: ${10 - index};">
+                                ${photoHtml}
+                            </div>
+                        `;
+                    });
+                    
+                    assigneeHtml = `
+                        <div class="dest-assignee-badge" title="Travelers: ${displayAssignees.join(', ')}" style="display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 0.3rem 0.6rem 0.3rem 0.4rem; border-radius: 100px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(5px); gap: 0.4rem;">
+                            <div style="display: flex; align-items: center;">
+                                ${avatarsHtml}
+                            </div>
+                            <span class="assignee-name" style="font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.7); max-width: 85px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 0.2rem; margin-right: 0.4rem;">
+                                ${displayAssignees.length === 1 ? displayAssignees[0] : `${displayAssignees.length} Travelers`}
+                            </span>
                         </div>
-                        <span class="assignee-name" style="font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-left: 0.4rem;">${dest.assignee}</span>
-                    </div>
-                `;
+                    `;
+                }
             }
 
             html += `
@@ -2329,7 +2403,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
-            const assignee = document.getElementById('m-dest-assignee') ? document.getElementById('m-dest-assignee').value : '';
+            
+            const assigneeChips = document.querySelectorAll('.assignee-select-chip.active');
+            const assignees = Array.from(assigneeChips).map(chip => chip.dataset.username);
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveBtn = document.getElementById('modal-save');
@@ -2347,7 +2423,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         date: date, 
                         image: imgUrl,
                         isWishlist: isWishlist,
-                        assignee: assignee
+                        assignee: assignees[0] || '',
+                        assignees: assignees
                     });
                     saveState();
                 }
@@ -2383,7 +2460,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const cost = parseFloat(document.getElementById('m-dest-cost').value) || 0;
             const date = document.getElementById('m-dest-date').value || new Date().toISOString().split('T')[0];
             const isWishlist = document.getElementById('m-dest-wishlist').checked;
-            const assignee = document.getElementById('m-dest-assignee') ? document.getElementById('m-dest-assignee').value : '';
+            
+            const assigneeChips = document.querySelectorAll('.assignee-select-chip.active');
+            const assignees = Array.from(assigneeChips).map(chip => chip.dataset.username);
             const fileInput = document.getElementById('m-dest-image-file');
 
             const saveBtn = document.getElementById('modal-save');
@@ -2401,7 +2480,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         date: date, 
                         image: imgUrl,
                         isWishlist: isWishlist,
-                        assignee: assignee
+                        assignee: assignees[0] || '',
+                        assignees: assignees
                     };
                     saveState();
                 }

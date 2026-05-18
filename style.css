@@ -6328,3 +6328,30 @@ body.home-active::after {
     color: #818cf8;
     font-size: 1rem;
 }
+
+/* Custom Interactive Traveler Selector Widgets */
+.assignees-selector-widget {
+    margin-top: 0.4rem;
+}
+.assignee-select-chip {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    will-change: transform, box-shadow, border-color;
+}
+.assignee-select-chip:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    transform: translateY(-2px);
+}
+.assignee-select-chip.active {
+    background: rgba(99, 102, 241, 0.12) !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+}
+.assignee-select-chip.active span {
+    color: white !important;
+}
+.assignee-select-chip.active .select-check-dot {
+    background: #6366f1 !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 8px #6366f1;
+}

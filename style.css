@@ -5689,10 +5689,25 @@ body.home-active::after {
 }
 
 .my-debt-details-container {
+    margin-top: 0;
+    padding-top: 0;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    border-top: 1px solid rgba(239, 68, 68, 0);
+    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.3s ease, 
+                padding-top 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                margin-top 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.4s ease;
+}
+
+.my-debt-details-container.show {
     margin-top: 1.5rem;
     padding-top: 1.2rem;
+    max-height: 800px; /* High enough limit to accommodate list of items */
+    opacity: 1;
     border-top: 1px solid rgba(239, 68, 68, 0.2);
-    animation: slideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .breakdown-title {

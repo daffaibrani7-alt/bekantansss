@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.travelFilter = 'all';
     window.currentAlbumDestId = null;
     window.currentPhotoIndex = 0;
+    window.settledUsers = [];
 
     function saveState() {
         // Normalize travelData: Remove heavy album data from the main state sync
@@ -58,7 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
             wheelParticipants: window.wheelParticipants,
             userProfiles: window.userProfiles,
             billTitle: window.billTitle || 'Trip Bill',
-            billPayerId: window.billPayerId !== undefined ? window.billPayerId : null
+            billPayerId: window.billPayerId !== undefined ? window.billPayerId : null,
+            settledUsers: window.settledUsers || []
         };
         
         // Save to Firebase (Main Metadata)
@@ -103,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.userProfiles = data.userProfiles || null; // Will fallback later if needed
             window.billTitle = data.billTitle || 'Trip Bill';
             window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
+            window.settledUsers = data.settledUsers || [];
             
             
             // Clean up travelData from cache (remove blob URLs)
@@ -371,12 +374,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getDefaultProfiles() {
         const p = {};
-        VALID_ACCOUNTS.forEach(acc => {
+        VALID_ACCOUNTS.forEach((acc, i) => {
+            let mockBank = '';
+            if (acc.user === 'Daffa') mockBank = 'BCA 8901234567 a/n Daffa Ibrani';
+            else if (acc.user === 'Okta') mockBank = 'Mandiri 1234567890 a/n Okta';
+            else if (acc.user === 'Desintha') mockBank = 'BNI 5556667778 a/n Desintha';
+            else mockBank = `BCA 1112223334 a/n ${acc.user}`;
+
             p[acc.user] = {
                 username: acc.user,
                 password: acc.pass,
                 title: 'Bekantans Squad',
-                photo: acc.user.charAt(0).toUpperCase()
+                photo: acc.user.charAt(0).toUpperCase(),
+                bank: mockBank,
+                qris: ''
             };
         });
         return p;
@@ -397,7 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fallback for hardcoded admin or unregistered missing profiles
             const fallback = VALID_ACCOUNTS.find(acc => acc.user.toLowerCase() === userInput.toLowerCase() && acc.pass === passInput);
             if (fallback) {
-                profile = { username: fallback.user, password: fallback.pass, title: 'Bekantans Squad', photo: fallback.user.charAt(0).toUpperCase() };
+                profile = { 
+                    username: fallback.user, 
+                    password: fallback.pass, 
+                    title: 'Bekantans Squad', 
+                    photo: fallback.user.charAt(0).toUpperCase(),
+                    bank: `BCA 1112223334 a/n ${fallback.user}`,
+                    qris: ''
+                };
                 window.userProfiles[profile.username] = profile;
                 saveState();
             }
@@ -642,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 priceInput.value = '';
                 
                 // Update state and render
+                if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
                 saveState();
                 if (typeof window.renderItems === 'function') window.renderItems();
                 if (typeof window.calculate === 'function') window.calculate('inline');
@@ -668,18 +687,21 @@ document.addEventListener('DOMContentLoaded', () => {
             let myDebt = 0;
             let myItemsHtml = '';
             if (me) {
-                window.items.forEach(item => {
-                    if (item.assignees && item.assignees.includes(me.id)) {
-                        const share = item.price / item.assignees.length;
-                        myDebt += share;
-                        myItemsHtml += `
-                            <div style="display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="color: white; font-weight: 500;">${item.name}</span>
-                                <span style="font-weight: 700; color: #fca5a5;">${formatRupiah(share)}</span>
-                            </div>
-                        `;
-                    }
-                });
+                const isUserSettled = window.settledUsers && window.settledUsers.includes(me.name);
+                if (!isUserSettled) {
+                    window.items.forEach(item => {
+                        if (item.assignees && item.assignees.includes(me.id)) {
+                            const share = item.price / item.assignees.length;
+                            myDebt += share;
+                            myItemsHtml += `
+                                <div style="display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: white; font-weight: 500;">${item.name}</span>
+                                    <span style="font-weight: 700; color: #fca5a5;">${formatRupiah(share)}</span>
+                                </div>
+                            `;
+                        }
+                    });
+                }
             }
 
             const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
@@ -753,11 +775,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </div>
                                 <div class="debt-alert-actions">
-                                    <button class="primary-btn small-btn glass-btn" onclick="document.getElementById('my-debt-details').classList.toggle('hidden')">Breakdown</button>
-                                    <button class="primary-btn small-btn pay-gradient-btn" onclick="alert('Payment integration coming soon!');">Pay Now</button>
+                                    <button class="primary-btn small-btn glass-btn" onclick="document.getElementById('my-debt-details').classList.toggle('show')">Breakdown</button>
+                                    <button class="primary-btn small-btn pay-gradient-btn" onclick="window.showPaymentDetails(${myDebt})">Pay Now</button>
                                 </div>
                             </div>
-                            <div id="my-debt-details" class="hidden my-debt-details-container">
+                            <div id="my-debt-details" class="my-debt-details-container">
                                 <h4 class="breakdown-title">Bill Breakdown</h4>
                                 <div class="breakdown-list">
                                     ${myItemsHtml}
@@ -853,22 +875,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 leftSide.appendChild(meta);
 
                 // Right side status badge
+                const isPersonSettled = window.settledUsers && window.settledUsers.includes(person.name);
                 const statusBadge = document.createElement('div');
                 if (payer) {
                     if (person.id === payer.id) {
-                        // Calculate total owed to payer
+                        // Calculate total owed to payer (excluding settled users)
                         let totalOwedToPayer = 0;
                         window.people.forEach(p => {
                             if (p.id !== payer.id) {
-                                window.items.forEach(item => {
-                                    if (item.assignees && item.assignees.includes(p.id)) {
-                                        totalOwedToPayer += item.price / item.assignees.length;
-                                    }
-                                });
+                                const pSettled = window.settledUsers && window.settledUsers.includes(p.name);
+                                if (!pSettled) {
+                                    window.items.forEach(item => {
+                                        if (item.assignees && item.assignees.includes(p.id)) {
+                                            totalOwedToPayer += item.price / item.assignees.length;
+                                        }
+                                    });
+                                }
                             }
                         });
                         statusBadge.className = 'home-member-status-badge settled-status';
                         statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Paid Bill (Owed ${formatRupiah(totalOwedToPayer)})`;
+                    } else if (isPersonSettled) {
+                        statusBadge.className = 'home-member-status-badge settled-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
                     } else if (personShare > 0) {
                         statusBadge.className = 'home-member-status-badge debt-status';
                         statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)} to ${payer.name}`;
@@ -877,7 +906,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
                     }
                 } else {
-                    if (personShare > 0) {
+                    if (isPersonSettled) {
+                        statusBadge.className = 'home-member-status-badge settled-status';
+                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
+                    } else if (personShare > 0) {
                         statusBadge.className = 'home-member-status-badge debt-status';
                         statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)}`;
                     } else {
@@ -1084,6 +1116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.billPayerId = null;
                 selectedText.textContent = '-- Select Payer --';
                 dropdownContainer.classList.remove('active');
+                if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
                 saveState();
                 if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
                 if (typeof window.calculate === 'function') window.calculate('inline');
@@ -1101,6 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.billPayerId = person.id;
                     selectedText.textContent = person.name;
                     dropdownContainer.classList.remove('active');
+                    if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
                     saveState();
                     if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
                     if (typeof window.calculate === 'function') window.calculate('inline');
@@ -2683,6 +2717,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = Number(e.target.closest('.delete-item-btn').dataset.id);
             window.customConfirm('Are you sure you want to delete this item?', () => {
                 window.items = window.items.filter(i => i.id !== id);
+                if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
                 saveState();
                 renderItems();
                 if (typeof window.renderHomeDashboard === 'function') {
@@ -2714,8 +2749,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const idx = item.assignees.indexOf(pId);
             if (idx > -1) item.assignees.splice(idx, 1);
             else item.assignees.push(pId);
-            
             // Persist assigned state immediately to local & cloud databases
+            if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
             saveState();
             
             // Update items render list and calculations
@@ -2738,6 +2773,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.startManual = () => {
         window.items = [];
+        if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
+        saveState();
         showView('split');
     };
 
@@ -2821,6 +2858,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const travelChanged = JSON.stringify(data.travelData) !== JSON.stringify(window.travelData);
             const wheelChanged = JSON.stringify(data.wheelParticipants) !== JSON.stringify(window.wheelParticipants);
             const profilesChanged = JSON.stringify(data.userProfiles) !== JSON.stringify(window.userProfiles);
+            const settledChanged = JSON.stringify(data.settledUsers) !== JSON.stringify(window.settledUsers);
 
             window.people = (data.people && data.people.length > 0) ? data.people : window.people;
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
@@ -2865,11 +2903,16 @@ document.addEventListener('DOMContentLoaded', () => {
             window.wheelParticipants = data.wheelParticipants || [];
             window.billTitle = data.billTitle || 'Trip Bill';
             window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
+            window.settledUsers = data.settledUsers || [];
             if (typeof syncBillMetadataUI === 'function') syncBillMetadataUI();
             
             lastDataString = currentDataString;
 
             // Targeted Re-rendering
+            if (peopleChanged || itemsChanged || settledChanged) {
+                if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
+            }
+
             if (profilesChanged) {
                 window.refreshAllAvatars();
                 if (!mainView.classList.contains('hidden')) renderPeople();
@@ -3549,6 +3592,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-profile-username').value = profile.username;
         document.getElementById('edit-profile-password').value = ''; // Don't show password
         document.getElementById('edit-profile-confirm-password').value = ''; // Reset confirm password
+        
+        // Bank and QRIS setup
+        document.getElementById('edit-profile-bank').value = profile.bank || '';
+        window.tempProfileQRIS = profile.qris || '';
+        const qrisStatus = document.getElementById('edit-qris-status');
+        const removeQRISBtn = document.getElementById('edit-remove-qris-btn');
+        if (qrisStatus && removeQRISBtn) {
+            if (profile.qris) {
+                qrisStatus.textContent = 'QRIS Loaded';
+                qrisStatus.style.color = '#34d399';
+                removeQRISBtn.style.display = 'block';
+            } else {
+                qrisStatus.textContent = 'No QRIS uploaded';
+                qrisStatus.style.color = 'rgba(255,255,255,0.5)';
+                removeQRISBtn.style.display = 'none';
+            }
+        }
 
         // Border Theme Setup
         window.tempProfileBorder = profile.borderTheme || 'none';
@@ -3606,6 +3666,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const newUsername = document.getElementById('edit-profile-username').value.trim();
         const newPass = document.getElementById('edit-profile-password').value;
         const confirmPass = document.getElementById('edit-profile-confirm-password').value;
+        const bank = document.getElementById('edit-profile-bank').value.trim();
+        const qris = window.tempProfileQRIS || '';
 
         if (!newUsername) {
             alert('Username cannot be empty.');
@@ -3642,6 +3704,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const updatedProfile = window.userProfiles[newUsername];
         updatedProfile.photo = photo || newUsername.charAt(0).toUpperCase();
         updatedProfile.borderTheme = window.tempProfileBorder || 'none';
+        updatedProfile.bank = bank;
+        updatedProfile.qris = qris;
         
         if (newPass) {
             updatedProfile.password = newPass;
@@ -3651,6 +3715,118 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
         showView('profile'); // Re-render profile view
         window.refreshAllAvatars();
+    };
+
+    window.handleQRISUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            window.tempProfileQRIS = e.target.result;
+            const qrisStatus = document.getElementById('edit-qris-status');
+            const removeQRISBtn = document.getElementById('edit-remove-qris-btn');
+            if (qrisStatus && removeQRISBtn) {
+                qrisStatus.textContent = 'QRIS Loaded';
+                qrisStatus.style.color = '#34d399';
+                removeQRISBtn.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.removeQRIS = () => {
+        window.tempProfileQRIS = '';
+        const qrisStatus = document.getElementById('edit-qris-status');
+        const removeQRISBtn = document.getElementById('edit-remove-qris-btn');
+        if (qrisStatus && removeQRISBtn) {
+            qrisStatus.textContent = 'No QRIS uploaded';
+            qrisStatus.style.color = 'rgba(255,255,255,0.5)';
+            removeQRISBtn.style.display = 'none';
+        }
+        document.getElementById('edit-profile-qris-upload').value = '';
+    };
+
+    window.showPaymentDetails = (amount) => {
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (!currentUser) return;
+
+        const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+        if (!payer) {
+            alert('Please select who paid the bill first in the Split Bill settings!');
+            return;
+        }
+
+        const payerProfile = (window.userProfiles && window.userProfiles[payer.name]) ? window.userProfiles[payer.name] : null;
+        
+        document.getElementById('payment-modal-payee').textContent = payer.name;
+        document.getElementById('payment-modal-amount').textContent = formatRupiah(amount);
+        
+        const bankNum = payerProfile && payerProfile.bank ? payerProfile.bank : `No bank account set for ${payer.name}`;
+        document.getElementById('payment-modal-bank').textContent = bankNum;
+
+        const qrisWrapper = document.getElementById('payment-modal-qris-wrapper');
+        const qrisNote = document.getElementById('payment-modal-qris-note');
+        if (qrisWrapper) {
+            if (payerProfile && payerProfile.qris) {
+                qrisWrapper.innerHTML = `<img src="${payerProfile.qris}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">`;
+                if (qrisNote) qrisNote.style.display = 'block';
+            } else {
+                qrisWrapper.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1e1b4b; text-align: center; gap: 0.5rem; width: 100%; height: 100%;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M7 7h.01M17 7h.01M17 17h.01M7 17h.01"></path></svg>
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #4b5563;">QRIS Not Uploaded</span>
+                        <span style="font-size: 0.7rem; color: #9ca3af; max-width: 90%;">Please ask payee to upload QRIS in their profile</span>
+                    </div>
+                `;
+                if (qrisNote) qrisNote.style.display = 'none';
+            }
+        }
+
+        document.getElementById('payment-modal-overlay').classList.remove('hidden');
+    };
+
+    window.closePaymentModal = () => {
+        document.getElementById('payment-modal-overlay').classList.add('hidden');
+        
+        const currentUser = sessionStorage.getItem('bekantans_user');
+        if (currentUser) {
+            if (!window.settledUsers) window.settledUsers = [];
+            if (!window.settledUsers.includes(currentUser)) {
+                window.settledUsers.push(currentUser);
+                saveState();
+                if (typeof window.renderHomeDashboard === 'function') {
+                    window.renderHomeDashboard();
+                }
+            }
+        }
+    };
+
+    window.resetSettledUsers = () => {
+        if (window.settledUsers && window.settledUsers.length > 0) {
+            window.settledUsers = [];
+            saveState();
+        }
+    };
+
+    window.copyPaymentBank = () => {
+        const bankText = document.getElementById('payment-modal-bank').textContent;
+        navigator.clipboard.writeText(bankText).then(() => {
+            const copyBtn = document.querySelector('.payment-bank-details button');
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                copyBtn.style.background = '#10b981';
+                copyBtn.style.borderColor = '#10b981';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '';
+                    copyBtn.style.borderColor = '';
+                }, 2000);
+            }
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
     };
 
 });

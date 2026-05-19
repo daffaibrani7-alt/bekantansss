@@ -44,6 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.currentPhotoIndex = 0;
     window.settledUsers = [];
 
+    // Draft State for Split Bill
+    window.draftItems = null;
+    window.draftBillTitle = 'Trip Bill';
+    window.draftBillPayerId = null;
+
+    window.initDraft = function() {
+        window.draftItems = JSON.parse(JSON.stringify(window.items || []));
+        window.draftBillTitle = window.billTitle || 'Trip Bill';
+        window.draftBillPayerId = window.billPayerId;
+    };
+
     function saveState() {
         // Normalize travelData: Remove heavy album data from the main state sync
         const sanitizedTravelData = window.travelData.map(dest => {
@@ -60,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             userProfiles: window.userProfiles,
             billTitle: window.billTitle || 'Trip Bill',
             billPayerId: window.billPayerId !== undefined ? window.billPayerId : null,
-            settledUsers: window.settledUsers || []
+            settledUsers: window.settledUsers || [],
+            bills: window.bills || []
         };
         
         // Save to Firebase (Main Metadata)
@@ -102,10 +114,22 @@ document.addEventListener('DOMContentLoaded', () => {
             window.people = (data.people && data.people.length > 0) ? data.people : [...DEFAULT_PEOPLE];
             window.items = (data.items && data.items.length > 0) ? data.items.map(i => ({...i, assignees: i.assignees || []})) : [];
             window.cashData = data.cashData || {};
-            window.userProfiles = data.userProfiles || null; // Will fallback later if needed
+            window.userProfiles = data.userProfiles || null;
             window.billTitle = data.billTitle || 'Trip Bill';
             window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
             window.settledUsers = data.settledUsers || [];
+            window.bills = data.bills || [];
+
+            // Migrate single active bill to bills stack for compatibility
+            if ((!window.bills || window.bills.length === 0) && window.items && window.items.length > 0) {
+                window.bills = [{
+                    id: 999999,
+                    title: window.billTitle || 'Trip Bill',
+                    payerId: window.billPayerId,
+                    items: window.items,
+                    settledUsers: window.settledUsers || []
+                }];
+            }
             
             
             // Clean up travelData from cache (remove blob URLs)
@@ -118,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Initial render from cache
             renderPeople();
+            window.initDraft();
             renderItems();
             renderCashFund();
             renderTravelJournal();
@@ -188,8 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('home-active');
             if (typeof renderHomeDashboard === 'function') renderHomeDashboard();
         } else if (viewName === 'split') {
+            const wasInAnotherView = mainView.classList.contains('hidden');
             mainView.classList.remove('hidden');
             navSplit.classList.add('active');
+            if (wasInAnotherView) {
+                window.initDraft();
+            }
             if (typeof renderPeople === 'function') renderPeople();
             if (typeof renderItems === 'function') renderItems();
         } else if (viewName === 'cash') {
@@ -633,6 +662,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (calculateBtn) {
         calculateBtn.onclick = () => {
+            const newBill = {
+                id: Date.now(),
+                title: window.draftBillTitle || 'Trip Bill',
+                payerId: window.draftBillPayerId,
+                items: JSON.parse(JSON.stringify(window.draftItems || [])),
+                settledUsers: []
+            };
+
+            if (!window.bills) window.bills = [];
+            window.bills.push(newBill);
+
+            // Commit latest to global state for compatibility/full-result display
+            window.items = newBill.items;
+            window.billTitle = newBill.title;
+            window.billPayerId = newBill.payerId;
+            window.settledUsers = newBill.settledUsers;
+
+            saveState();
+
             window.showView('split-results');
             window.calculate('full');
         };
@@ -653,18 +701,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: price,
                     assignees: [] // No one assigned by default
                 };
-                window.items.push(newItem);
+                if (!window.draftItems) window.draftItems = [];
+                window.draftItems.push(newItem);
                 
                 // Clear inputs
                 nameInput.value = '';
                 priceInput.value = '';
                 
-                // Update state and render
-                if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-                saveState();
+                // Update local rendering and inline calculations only (NO saveState or renderHomeDashboard!)
                 if (typeof window.renderItems === 'function') window.renderItems();
                 if (typeof window.calculate === 'function') window.calculate('inline');
-                if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
             } else {
                 alert('Please enter a valid item name and price.');
             }
@@ -680,89 +726,89 @@ document.addEventListener('DOMContentLoaded', () => {
             greetingEl.textContent = `Welcome back, ${currentUser}!`;
         }
 
-        // My Debt Card
+        // My Debt Cards Stack
         const myDebtContainer = document.getElementById('home-my-debt-container');
-        if (myDebtContainer && window.items && window.people) {
+        if (myDebtContainer && window.people) {
+            myDebtContainer.innerHTML = '';
             const me = window.people.find(p => p.name.toLowerCase() === currentUser.toLowerCase());
-            let myDebt = 0;
-            let myItemsHtml = '';
-            if (me) {
-                const isUserSettled = window.settledUsers && window.settledUsers.includes(me.name);
-                if (!isUserSettled) {
-                    window.items.forEach(item => {
-                        if (item.assignees && item.assignees.includes(me.id)) {
-                            const share = item.price / item.assignees.length;
-                            myDebt += share;
-                            myItemsHtml += `
-                                <div style="display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="color: white; font-weight: 500;">${item.name}</span>
-                                    <span style="font-weight: 700; color: #fca5a5;">${formatRupiah(share)}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                }
-            }
+            
+            let renderedCardsCount = 0;
+            const billsList = window.bills || [];
 
-            const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
-            const payerName = payer ? payer.name : '';
+            billsList.forEach((bill) => {
+                const billName = bill.title || 'Trip Bill';
+                const payer = bill.payerId !== null && bill.payerId !== undefined ? window.people.find(p => p.id === bill.payerId) : null;
+                const payerName = payer ? payer.name : '';
 
-            if (window.billPayerId !== null && me && me.id === window.billPayerId) {
-                // Calculate how much others owe you
-                let totalOwedToMe = 0;
-                window.people.forEach(p => {
-                    if (p.id !== me.id) {
-                        window.items.forEach(item => {
-                            if (item.assignees && item.assignees.includes(p.id)) {
-                                totalOwedToMe += item.price / item.assignees.length;
+                if (me) {
+                    // Check if current user owes money on this bill
+                    const isUserSettled = bill.settledUsers && bill.settledUsers.includes(me.name);
+                    let myDebt = 0;
+                    let myItemsHtml = '';
+
+                    if (!isUserSettled) {
+                        (bill.items || []).forEach(item => {
+                            if (item.assignees && item.assignees.includes(me.id)) {
+                                const share = item.price / item.assignees.length;
+                                myDebt += share;
+                                myItemsHtml += `
+                                    <div style="display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <span style="color: white; font-weight: 500;">${item.name}</span>
+                                        <span style="font-weight: 700; color: #fca5a5;">${formatRupiah(share)}</span>
+                                    </div>
+                                `;
                             }
                         });
                     }
-                });
 
-                if (totalOwedToMe > 0) {
-                    const billName = window.billTitle || 'Trip Bill';
-                    myDebtContainer.innerHTML = `
-                        <div class="home-debt-alert-card animate-fade-in" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.02)); border-color: rgba(16, 185, 129, 0.2);">
-                            <div class="debt-card-glow" style="background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.15), transparent 70%);"></div>
-                            <div class="debt-card-inner">
-                                <div class="debt-alert-left">
-                                    <div class="debt-icon-container" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25); color: #34d399;">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                    </div>
-                                    <div class="debt-meta">
-                                        <span class="debt-alert-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">YOU PAID THIS BILL</span>
-                                        <h2 class="debt-alert-title">Squad owes you <span class="debt-alert-amount" style="color: #34d399;">${formatRupiah(totalOwedToMe)}</span> for <span style="color: white; font-weight: 700;">${billName}</span></h2>
+                    if (payer && me.id === payer.id) {
+                        // Current user is the payer of this bill. Calculate how much others owe you on this bill.
+                        let totalOwedToMe = 0;
+                        window.people.forEach(p => {
+                            if (p.id !== me.id) {
+                                const isOtherSettled = bill.settledUsers && bill.settledUsers.includes(p.name);
+                                if (!isOtherSettled) {
+                                    (bill.items || []).forEach(item => {
+                                        if (item.assignees && item.assignees.includes(p.id)) {
+                                            totalOwedToMe += item.price / item.assignees.length;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+
+                        if (totalOwedToMe > 0) {
+                            renderedCardsCount++;
+                            const card = document.createElement('div');
+                            card.className = 'home-debt-alert-card animate-fade-in';
+                            card.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.02))';
+                            card.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                            card.innerHTML = `
+                                <div class="debt-card-glow" style="background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.15), transparent 70%);"></div>
+                                <div class="debt-card-inner">
+                                    <div class="debt-alert-left">
+                                        <div class="debt-icon-container" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.25); color: #34d399;">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                        </div>
+                                        <div class="debt-meta">
+                                            <span class="debt-alert-tag" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">YOU PAID THIS BILL</span>
+                                            <h2 class="debt-alert-title">Squad owes you <span class="debt-alert-amount" style="color: #34d399;">${formatRupiah(totalOwedToMe)}</span> for <span style="color: white; font-weight: 700;">${billName}</span></h2>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    myDebtContainer.innerHTML = `
-                        <div class="home-no-debt-card animate-fade-in">
-                            <div class="no-debt-inner">
-                                <span class="no-debt-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                    </svg>
-                                </span>
-                                <div class="no-debt-meta">
-                                    <h3>You are all settled!</h3>
-                                    <p>No active debts in the squad.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            } else {
-                if (myDebt > 0) {
-                    const actionTagText = payer ? `OWED TO ${payerName.toUpperCase()}` : `ACTION REQUIRED`;
-                    const titleText = payer ? `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span> to ${payerName}` : `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span>`;
-                    
-                    myDebtContainer.innerHTML = `
-                        <div class="home-debt-alert-card animate-fade-in">
+                            `;
+                            myDebtContainer.appendChild(card);
+                        }
+                    } else if (myDebt > 0) {
+                        renderedCardsCount++;
+                        const actionTagText = payer ? `OWED TO ${payerName.toUpperCase()}` : `ACTION REQUIRED`;
+                        const titleText = payer 
+                            ? `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span> to ${payerName} for <span style="color: white; font-weight: 700;">${billName}</span>` 
+                            : `You owe <span class="debt-alert-amount">${formatRupiah(myDebt)}</span> for <span style="color: white; font-weight: 700;">${billName}</span>`;
+                        
+                        const card = document.createElement('div');
+                        card.className = 'home-debt-alert-card animate-fade-in';
+                        card.innerHTML = `
                             <div class="debt-card-glow"></div>
                             <div class="debt-card-inner">
                                 <div class="debt-alert-left">
@@ -775,56 +821,62 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </div>
                                 <div class="debt-alert-actions">
-                                    <button class="primary-btn small-btn glass-btn" onclick="document.getElementById('my-debt-details').classList.toggle('show')">Breakdown</button>
-                                    <button class="primary-btn small-btn pay-gradient-btn" onclick="window.showPaymentDetails(${myDebt})">Pay Now</button>
+                                    <button class="primary-btn small-btn glass-btn" onclick="document.getElementById('my-debt-details-${bill.id}').classList.toggle('show')">Breakdown</button>
+                                    <button class="primary-btn small-btn pay-gradient-btn" onclick="window.showPaymentDetails(${myDebt}, ${bill.id})">Pay Now</button>
                                 </div>
                             </div>
-                            <div id="my-debt-details" class="my-debt-details-container">
+                            <div id="my-debt-details-${bill.id}" class="my-debt-details-container">
                                 <h4 class="breakdown-title">Bill Breakdown</h4>
                                 <div class="breakdown-list">
                                     ${myItemsHtml}
                                 </div>
                             </div>
-                        </div>
-                    `;
-                } else {
-                    myDebtContainer.innerHTML = `
-                        <div class="home-no-debt-card animate-fade-in">
-                            <div class="no-debt-inner">
-                                <span class="no-debt-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                    </svg>
-                                </span>
-                                <div class="no-debt-meta">
-                                    <h3>You are all settled!</h3>
-                                    <p>No active debts in the squad.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                        `;
+                        myDebtContainer.appendChild(card);
+                    }
                 }
+            });
+
+            if (renderedCardsCount === 0) {
+                const noDebtCard = document.createElement('div');
+                noDebtCard.className = 'home-no-debt-card animate-fade-in';
+                noDebtCard.innerHTML = `
+                    <div class="no-debt-inner">
+                        <span class="no-debt-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </span>
+                        <div class="no-debt-meta">
+                            <h3>You are all settled!</h3>
+                            <p>No active debts in the squad.</p>
+                        </div>
+                    </div>
+                `;
+                myDebtContainer.appendChild(noDebtCard);
             }
         }
 
-        // Active Members (Upgraded Squad Roster with exact debts/settled indicators)
+        // Active Members (Upgraded Squad Roster with exact consolidated debts)
         const membersContainer = document.getElementById('home-active-members');
         if (membersContainer && window.people) {
             membersContainer.innerHTML = '';
             
-            const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
-
             window.people.forEach(person => {
-                // Calculate their specific share
+                // Calculate their specific consolidated share across all active bills
                 let personShare = 0;
-                if (window.items) {
-                    window.items.forEach(item => {
-                        if (item.assignees && item.assignees.includes(person.id)) {
-                            personShare += item.price / item.assignees.length;
-                        }
-                    });
-                }
+                const billsList = window.bills || [];
+                billsList.forEach(bill => {
+                    const isPersonSettled = bill.settledUsers && bill.settledUsers.includes(person.name);
+                    if (!isPersonSettled) {
+                        (bill.items || []).forEach(item => {
+                            if (item.assignees && item.assignees.includes(person.id)) {
+                                personShare += item.price / item.assignees.length;
+                            }
+                        });
+                    }
+                });
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'home-member-row-premium';
@@ -875,47 +927,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 leftSide.appendChild(meta);
 
                 // Right side status badge
-                const isPersonSettled = window.settledUsers && window.settledUsers.includes(person.name);
                 const statusBadge = document.createElement('div');
-                if (payer) {
-                    if (person.id === payer.id) {
-                        // Calculate total owed to payer (excluding settled users)
-                        let totalOwedToPayer = 0;
-                        window.people.forEach(p => {
-                            if (p.id !== payer.id) {
-                                const pSettled = window.settledUsers && window.settledUsers.includes(p.name);
-                                if (!pSettled) {
-                                    window.items.forEach(item => {
-                                        if (item.assignees && item.assignees.includes(p.id)) {
-                                            totalOwedToPayer += item.price / item.assignees.length;
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                        statusBadge.className = 'home-member-status-badge settled-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Paid Bill (Owed ${formatRupiah(totalOwedToPayer)})`;
-                    } else if (isPersonSettled) {
-                        statusBadge.className = 'home-member-status-badge settled-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
-                    } else if (personShare > 0) {
-                        statusBadge.className = 'home-member-status-badge debt-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)} to ${payer.name}`;
-                    } else {
-                        statusBadge.className = 'home-member-status-badge settled-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
-                    }
+                if (personShare > 0) {
+                    statusBadge.className = 'home-member-status-badge debt-status';
+                    statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)}`;
                 } else {
-                    if (isPersonSettled) {
-                        statusBadge.className = 'home-member-status-badge settled-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
-                    } else if (personShare > 0) {
-                        statusBadge.className = 'home-member-status-badge debt-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot red-dot"></span> Owes ${formatRupiah(personShare)}`;
-                    } else {
-                        statusBadge.className = 'home-member-status-badge settled-status';
-                        statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
-                    }
+                    statusBadge.className = 'home-member-status-badge settled-status';
+                    statusBadge.innerHTML = `<span class="status-indicator-dot green-dot"></span> Settled`;
                 }
 
                 wrapper.appendChild(leftSide);
@@ -1066,15 +1084,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (titleInput) {
             // Only update input value if the user is NOT actively typing in it
             if (document.activeElement !== titleInput) {
-                titleInput.value = window.billTitle !== undefined ? window.billTitle : 'Trip Bill';
+                titleInput.value = window.draftBillTitle !== undefined ? window.draftBillTitle : 'Trip Bill';
             }
             if (!titleInput.oninput) {
                 titleInput.oninput = () => {
-                    window.billTitle = titleInput.value; // Preserve spaces and empty states while typing
-                    saveState();
-                    if (typeof window.renderHomeDashboard === 'function') {
-                        window.renderHomeDashboard();
-                    }
+                    window.draftBillTitle = titleInput.value; // Preserve spaces and empty states while typing
                 };
             }
         }
@@ -1099,8 +1113,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Find current payer name
-            const activePayer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+            // Find current draft payer name
+            const activePayer = window.draftBillPayerId !== null && window.draftBillPayerId !== undefined ? window.people.find(p => p.id === window.draftBillPayerId) : null;
             selectedText.textContent = activePayer ? activePayer.name : '-- Select Payer --';
 
             // Populate options inside menu
@@ -1109,16 +1123,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // "-- Select Payer --" option
             const defaultOpt = document.createElement('div');
             defaultOpt.className = 'custom-dropdown-option';
-            if (window.billPayerId === null) defaultOpt.classList.add('selected');
+            if (window.draftBillPayerId === null || window.draftBillPayerId === undefined) defaultOpt.classList.add('selected');
             defaultOpt.textContent = '-- Select Payer --';
             defaultOpt.onclick = (e) => {
                 e.stopPropagation();
-                window.billPayerId = null;
+                window.draftBillPayerId = null;
                 selectedText.textContent = '-- Select Payer --';
                 dropdownContainer.classList.remove('active');
                 if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-                saveState();
-                if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
                 if (typeof window.calculate === 'function') window.calculate('inline');
             };
             dropdownMenu.appendChild(defaultOpt);
@@ -1127,16 +1139,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.people.forEach(person => {
                 const opt = document.createElement('div');
                 opt.className = 'custom-dropdown-option';
-                if (window.billPayerId === person.id) opt.classList.add('selected');
+                if (window.draftBillPayerId === person.id) opt.classList.add('selected');
                 opt.textContent = person.name;
                 opt.onclick = (e) => {
                     e.stopPropagation();
-                    window.billPayerId = person.id;
+                    window.draftBillPayerId = person.id;
                     selectedText.textContent = person.name;
                     dropdownContainer.classList.remove('active');
                     if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-                    saveState();
-                    if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
                     if (typeof window.calculate === 'function') window.calculate('inline');
                 };
                 dropdownMenu.appendChild(opt);
@@ -2146,7 +2156,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renderItems = function() {
         if (!itemsList) return;
         itemsList.innerHTML = '';
-        window.items.forEach(item => {
+        const activeItems = (window.draftItems !== null && window.draftItems !== undefined) ? window.draftItems : window.items;
+        activeItems.forEach(item => {
             const card = document.createElement('div');
             card.className = 'item-card dash-card';
             card.innerHTML = `
@@ -2178,6 +2189,15 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             itemsList.appendChild(card);
         });
+
+        // Disable "Generate Split" button if items are 0 or none have been assigned
+        const calculateBtn = document.getElementById('calculate-btn');
+        if (calculateBtn) {
+            const hasItems = activeItems && activeItems.length > 0;
+            const hasAssignees = hasItems && activeItems.some(item => item.assignees && item.assignees.length > 0);
+            calculateBtn.disabled = !hasItems || !hasAssignees;
+        }
+
         window.calculate();
     };
 
@@ -2185,7 +2205,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const personDetails = {};
         window.people.forEach(p => personDetails[p.id] = { total: 0, items: [] });
 
-        window.items.forEach(item => {
+        const activeItems = (window.draftItems !== null && window.draftItems !== undefined) ? window.draftItems : window.items;
+
+        activeItems.forEach(item => {
             const assignees = item.assignees || [];
             if (assignees.length > 0) {
                 const sharePrice = item.price / assignees.length; 
@@ -2249,7 +2271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (stickyTotalDisplay) {
-            const sum = window.items.reduce((acc, i) => acc + i.price, 0);
+            const sum = activeItems.reduce((acc, i) => acc + i.price, 0);
             stickyTotalDisplay.textContent = formatRupiah(sum);
         }
     };
@@ -2505,7 +2527,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = document.getElementById('m-item-name').value.trim();
             const price = parseFloat(document.getElementById('m-item-price').value) || 0;
             if (name) {
-                window.items.push({ id: Date.now(), name, price, assignees: [] });
+                if (!window.draftItems) window.draftItems = [];
+                window.draftItems.push({ id: Date.now(), name, price, assignees: [] });
             }
         } else if (currentModalAction === 'add-destination') {
             const name = document.getElementById('m-dest-name').value.trim();
@@ -2641,18 +2664,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else if (currentModalAction.startsWith('edit-item-')) {
             const id = Number(currentModalAction.split('-')[2]);
-            const item = window.items.find(i => i.id === id);
+            const item = window.draftItems.find(i => i.id === id);
             if (item) {
                 const newName = document.getElementById('edit-item-name').value.trim();
                 const newPrice = parseFloat(document.getElementById('edit-item-price').value);
                 if (newName && !isNaN(newPrice) && newPrice > 0) {
                     item.name = newName;
                     item.price = newPrice;
-                    saveState();
                     renderItems();
-                    if (typeof window.renderHomeDashboard === 'function') {
-                        window.renderHomeDashboard();
-                    }
                 } else {
                     alert('Please enter a valid item name and price.');
                     return;
@@ -2716,13 +2735,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('.delete-item-btn')) {
             const id = Number(e.target.closest('.delete-item-btn').dataset.id);
             window.customConfirm('Are you sure you want to delete this item?', () => {
-                window.items = window.items.filter(i => i.id !== id);
-                if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-                saveState();
+                window.draftItems = window.draftItems.filter(i => i.id !== id);
                 renderItems();
-                if (typeof window.renderHomeDashboard === 'function') {
-                    window.renderHomeDashboard();
-                }
             });
         }
         if (e.target.closest('.delete-dest-btn')) {
@@ -2743,23 +2757,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (e.target.closest('.assign-tag')) {
             const tag = e.target.closest('.assign-tag');
-            const item = window.items.find(i => i.id === Number(tag.dataset.itemId));
+            const item = window.draftItems.find(i => i.id === Number(tag.dataset.itemId));
             const pId = Number(tag.dataset.personId);
             if (!item.assignees) item.assignees = [];
             const idx = item.assignees.indexOf(pId);
             if (idx > -1) item.assignees.splice(idx, 1);
             else item.assignees.push(pId);
-            // Persist assigned state immediately to local & cloud databases
-            if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-            saveState();
             
             // Update items render list and calculations
             renderItems();
-            
-            // Sync Home dashboard stats live
-            if (typeof window.renderHomeDashboard === 'function') {
-                window.renderHomeDashboard();
-            }
         }
         if (e.target.closest('.pay-toggle')) {
             const btn = e.target.closest('.pay-toggle');
@@ -2772,9 +2778,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.startManual = () => {
-        window.items = [];
+        window.draftItems = [];
+        window.draftBillTitle = '';
+        window.draftBillPayerId = null;
         if (typeof window.resetSettledUsers === 'function') window.resetSettledUsers();
-        saveState();
+        if (typeof window.syncBillMetadataUI === 'function') window.syncBillMetadataUI();
         showView('split');
     };
 
@@ -2832,7 +2840,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: Date.now() + 4, name: 'Service Charge (10%)', price: 20500, assignees: [] }
                 ];
 
-                window.items = mockItems;
+                window.draftItems = mockItems;
+                window.draftBillTitle = 'Trip Bill';
+                window.draftBillPayerId = null;
                 ocrStatus.classList.add('hidden');
                 if (heroContent) heroContent.classList.remove('hidden');
                 
@@ -2859,10 +2869,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const wheelChanged = JSON.stringify(data.wheelParticipants) !== JSON.stringify(window.wheelParticipants);
             const profilesChanged = JSON.stringify(data.userProfiles) !== JSON.stringify(window.userProfiles);
             const settledChanged = JSON.stringify(data.settledUsers) !== JSON.stringify(window.settledUsers);
+            const billsChanged = JSON.stringify(data.bills) !== JSON.stringify(window.bills);
+
+            const titleChanged = data.billTitle !== window.billTitle;
+            const payerChanged = data.billPayerId !== window.billPayerId;
 
             window.people = (data.people && data.people.length > 0) ? data.people : window.people;
             window.items = (data.items && data.items.length > 0) ? data.items : window.items;
             window.cashData = data.cashData || {};
+            
+            if (itemsChanged) {
+                window.draftItems = JSON.parse(JSON.stringify(window.items || []));
+            }
             
             let stateCleaned = false;
             if (data.userProfiles) {
@@ -2904,12 +2922,28 @@ document.addEventListener('DOMContentLoaded', () => {
             window.billTitle = data.billTitle || 'Trip Bill';
             window.billPayerId = (data.billPayerId !== undefined) ? data.billPayerId : null;
             window.settledUsers = data.settledUsers || [];
+            window.bills = data.bills || [];
+
+            // Migrate single active bill to bills stack for compatibility
+            if ((!window.bills || window.bills.length === 0) && window.items && window.items.length > 0) {
+                window.bills = [{
+                    id: 999999,
+                    title: window.billTitle || 'Trip Bill',
+                    payerId: window.billPayerId,
+                    items: window.items,
+                    settledUsers: window.settledUsers || []
+                }];
+            }
+            
+            if (titleChanged) window.draftBillTitle = window.billTitle;
+            if (payerChanged) window.draftBillPayerId = window.billPayerId;
+
             if (typeof syncBillMetadataUI === 'function') syncBillMetadataUI();
             
             lastDataString = currentDataString;
 
             // Targeted Re-rendering
-            if (peopleChanged || itemsChanged || settledChanged) {
+            if (peopleChanged || itemsChanged || settledChanged || billsChanged) {
                 if (typeof window.renderHomeDashboard === 'function') window.renderHomeDashboard();
             }
 
@@ -2956,7 +2990,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    showView('landing');
+    showView('home');
 
     // --- Spin Wheel Logic ---
     let currentRotation = 0;
@@ -3747,11 +3781,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-profile-qris-upload').value = '';
     };
 
-    window.showPaymentDetails = (amount) => {
+    window.showPaymentDetails = (amount, billId) => {
         const currentUser = sessionStorage.getItem('bekantans_user');
         if (!currentUser) return;
 
-        const payer = window.billPayerId !== null ? window.people.find(p => p.id === window.billPayerId) : null;
+        window.activePaymentBillId = billId;
+
+        // Find the specific bill in the bills array
+        const bill = window.bills && window.bills.find(b => b.id === billId);
+        if (!bill) return;
+
+        const payer = bill.payerId !== null && bill.payerId !== undefined ? window.people.find(p => p.id === bill.payerId) : null;
         if (!payer) {
             alert('Please select who paid the bill first in the Split Bill settings!');
             return;
@@ -3790,13 +3830,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('payment-modal-overlay').classList.add('hidden');
         
         const currentUser = sessionStorage.getItem('bekantans_user');
-        if (currentUser) {
-            if (!window.settledUsers) window.settledUsers = [];
-            if (!window.settledUsers.includes(currentUser)) {
-                window.settledUsers.push(currentUser);
-                saveState();
-                if (typeof window.renderHomeDashboard === 'function') {
-                    window.renderHomeDashboard();
+        if (currentUser && window.activePaymentBillId) {
+            const bill = window.bills && window.bills.find(b => b.id === window.activePaymentBillId);
+            if (bill) {
+                if (!bill.settledUsers) bill.settledUsers = [];
+                if (!bill.settledUsers.includes(currentUser)) {
+                    bill.settledUsers.push(currentUser);
+                    
+                    // Keep compatibility settledUsers array updated if it is the latest active bill
+                    const latestBill = window.bills[window.bills.length - 1];
+                    if (latestBill && latestBill.id === bill.id) {
+                        window.settledUsers = bill.settledUsers;
+                    }
+                    
+                    saveState();
+                    if (typeof window.renderHomeDashboard === 'function') {
+                        window.renderHomeDashboard();
+                    }
                 }
             }
         }

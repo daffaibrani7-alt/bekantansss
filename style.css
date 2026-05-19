@@ -922,6 +922,15 @@ body {
     box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
 }
 
+.full-btn:disabled,
+.primary-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 /* --- MODALS --- */
 .modal-overlay {
     position: fixed;
@@ -5579,6 +5588,14 @@ body.home-active::after {
     color: rgba(255, 255, 255, 0.6);
 }
 
+#home-my-debt-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
 /* Premium Debt Card styles */
 .home-debt-alert-card {
     position: relative;
@@ -5686,6 +5703,30 @@ body.home-active::after {
 .pay-gradient-btn:hover {
     background: linear-gradient(135deg, #f87171, #ef4444);
     box-shadow: 0 8px 20px rgba(239, 68, 68, 0.45);
+}
+
+.home-debt-alert-card .glass-btn {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.1) !important;
+}
+.home-debt-alert-card .glass-btn:hover {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #fecaca !important;
+}
+
+.home-debt-alert-card .pay-gradient-btn {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 800 !important;
+    box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4) !important;
+}
+.home-debt-alert-card .pay-gradient-btn:hover {
+    background: linear-gradient(135deg, #f87171, #ef4444) !important;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.55) !important;
 }
 
 .my-debt-details-container {
